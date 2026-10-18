@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TouchApp
+import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -159,12 +160,12 @@ fun MiniGamePlayScreen(
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "${activeGame.gameType.emoji} ${activeGame.gameType.localizedTitle(languageCode)}",
+                    text = activeGame.gameType.localizedTitle(languageCode),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "${activeGame.playMode.emoji} ${strings.levelPrefix} ${activeGame.levelNumber} • ${strings.questionProgress} ${question.index}/${question.total}",
+                    text = "${activeGame.playMode.localizedTitle(languageCode)} • ${strings.levelPrefix} ${activeGame.levelNumber} • ${strings.questionProgress} ${question.index}/${question.total}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -736,12 +737,22 @@ private fun LevelCompletedCelebration(
                                     shape = RoundedCornerShape(50),
                                     color = Color(badge.colorHex).copy(alpha = 0.2f)
                                 ) {
-                                    Text(
-                                        text = "${badge.emoji} ${badge.localizedTitle(languageCode)}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        WonderQuestIcon(
+                                            iconKey = badge.iconKey,
+                                            tint = Color(badge.colorHex),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = badge.localizedTitle(languageCode),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }

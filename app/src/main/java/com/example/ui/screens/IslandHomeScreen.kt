@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DarkMode
@@ -35,8 +36,11 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
+import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -219,7 +223,7 @@ fun IslandHomeScreen(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "${buddy.emoji} ${buddy.localizedName(lang)} & ${profile.childName}",
+                                    text = "${buddy.localizedName(lang)} & ${profile.childName}",
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -267,25 +271,25 @@ fun IslandHomeScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             InteractiveReactionChip(
-                                emoji = "🍓",
+                                icon = Icons.Default.Restaurant,
                                 label = strings.feedTreatButton,
                                 onClick = { onBuddyTap(BuddyReaction.EATING_TREAT) },
                                 tag = "home_feed_treat_chip"
                             )
                             InteractiveReactionChip(
-                                emoji = "🪄",
+                                icon = Icons.Default.AutoAwesome,
                                 label = strings.magicWandButton,
                                 onClick = { onBuddyTap(BuddyReaction.MAGIC_WAND) },
                                 tag = "home_magic_wand_chip"
                             )
                             InteractiveReactionChip(
-                                emoji = "💃",
+                                icon = Icons.Default.Celebration,
                                 label = strings.triggerDanceButton,
                                 onClick = { onBuddyTap(BuddyReaction.DANCING) },
                                 tag = "home_dance_chip"
                             )
                             InteractiveReactionChip(
-                                emoji = "🙌",
+                                icon = Icons.Default.PanTool,
                                 label = strings.triggerHighFiveButton,
                                 onClick = { onBuddyTap(BuddyReaction.HIGH_FIVE) },
                                 tag = "home_high_five_chip"
@@ -342,9 +346,16 @@ fun IslandHomeScreen(
                         FilterChip(
                             selected = selected,
                             onClick = { onSelectAgeGroup(group) },
+                            leadingIcon = {
+                                WonderQuestIcon(
+                                    iconKey = group.iconKey,
+                                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
                             label = {
                                 Text(
-                                    text = "${group.iconEmoji} ${group.localizedTitle(lang)}",
+                                    text = group.localizedTitle(lang),
                                     fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -400,8 +411,12 @@ fun IslandHomeScreen(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(text = mode.emoji, fontSize = 22.sp)
-                                Spacer(modifier = Modifier.height(2.dp))
+                                WonderQuestIcon(
+                                    iconKey = mode.iconKey,
+                                    tint = if (isSelected) Color.White else accent,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = mode.localizedTitle(lang),
                                     style = MaterialTheme.typography.labelMedium,
@@ -411,12 +426,21 @@ fun IslandHomeScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (mode.bonusStars > 0) {
-                                    Text(
-                                        text = "+${mode.bonusStars} ⭐",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isSelected) Color.White.copy(alpha = 0.92f) else accent,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "+${mode.bonusStars}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (isSelected) Color.White.copy(alpha = 0.92f) else accent,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = if (isSelected) Color.White else Color(0xFFFFB300),
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -442,13 +466,23 @@ fun IslandHomeScreen(
                     shape = RoundedCornerShape(50),
                     color = Color(uiState.selectedPlayMode.colorHex).copy(alpha = 0.18f)
                 ) {
-                    Text(
-                        text = "${uiState.selectedPlayMode.emoji} ${uiState.selectedPlayMode.localizedTitle(lang)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(uiState.selectedPlayMode.colorHex),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WonderQuestIcon(
+                            iconKey = uiState.selectedPlayMode.iconKey,
+                            tint = Color(uiState.selectedPlayMode.colorHex),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = uiState.selectedPlayMode.localizedTitle(lang),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(uiState.selectedPlayMode.colorHex)
+                        )
+                    }
                 }
             }
         }
@@ -538,14 +572,21 @@ private fun StorageAndSyncTopBanner(
 
 @Composable
 private fun InteractiveReactionChip(
-    emoji: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit,
     tag: String
 ) {
     AssistChip(
         onClick = onClick,
-        leadingIcon = { Text(text = emoji, fontSize = 16.sp) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+        },
         label = {
             Text(
                 text = label,
@@ -654,7 +695,11 @@ private fun MiniGameQuestCard(
                     modifier = Modifier.size(56.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = gameType.emoji, fontSize = 30.sp)
+                        WonderQuestIcon(
+                            iconKey = gameType.iconKey,
+                            tint = accent,
+                            modifier = Modifier.size(30.dp)
+                        )
                     }
                 }
 
@@ -672,11 +717,25 @@ private fun MiniGameQuestCard(
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "⭐⭐⭐" + if (playMode.bonusStars > 0) " +${playMode.bonusStars}" else "",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        for (i in 0 until 3) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        if (playMode.bonusStars > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "+${playMode.bonusStars}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = accent
+                            )
+                        }
+                    }
                 }
             }
 
@@ -712,7 +771,7 @@ private fun MiniGameQuestCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "${playMode.emoji} $playButtonLabel",
+                    text = playButtonLabel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold
                 )

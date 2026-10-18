@@ -12,7 +12,7 @@ data class ChildProfile(
     val userId: String = "",
     val childName: String = "Penjelajah Kecil",
     val ageGroup: String = "7-9",
-    val selectedCharacter: String = "sparky",
+    val selectedCharacter: String = "komodo",
     val languageCode: String = "id",
     val darkMode: Boolean = false,
     val parentPin: String = "1234",
@@ -22,12 +22,13 @@ data class ChildProfile(
     val logicScore: Long = 0L,
     val streakDays: Long = 1L,
     val unlockedBadges: List<String> = listOf("curious_buddy"),
+    val claimedRewardBadges: List<String> = listOf("curious_buddy"),
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 ) {
     fun toCreatePayload(ownerUid: String): Map<String, Any> {
         val validLang = if (languageCode in listOf("id", "en", "es", "fr", "hi")) languageCode else "id"
-        val validChar = if (selectedCharacter in listOf("sparky", "luna", "robobit", "sunny", "komodo")) selectedCharacter else "sparky"
+        val validChar = if (selectedCharacter in listOf("sparky", "luna", "robobit", "sunny", "komodo")) selectedCharacter else "komodo"
         val validAge = if (ageGroup in listOf("4-6", "7-9", "10-13")) ageGroup else "7-9"
         return mapOf(
             "userId" to ownerUid,
@@ -43,6 +44,7 @@ data class ChildProfile(
             "logicScore" to logicScore.coerceIn(0L, 1000000L),
             "streakDays" to streakDays.coerceIn(0L, 3650L),
             "unlockedBadges" to unlockedBadges.distinct().take(20),
+            "claimedRewardBadges" to claimedRewardBadges.distinct().take(20),
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
@@ -85,7 +87,7 @@ data class GameSessionRecord(
 
 enum class GamePlayMode(
     val id: String,
-    val emoji: String,
+    val iconKey: String,
     val titleId: String,
     val titleEn: String,
     val titleEs: String,
@@ -103,17 +105,17 @@ enum class GamePlayMode(
 ) {
     ADVENTURE(
         id = "adventure",
-        emoji = "🗺️",
+        iconKey = "explore",
         titleId = "Petualangan",
         titleEn = "Adventure",
         titleEs = "Aventura",
         titleFr = "Aventure",
         titleHi = "रोमांच",
-        descId = "5 tantangan seru dengan petunjuk visual & bintang!",
-        descEn = "5 fun puzzles with visual hints & golden stars!",
-        descEs = "¡5 acertijos con pistas visuales y estrellas!",
-        descFr = "5 énigmes avec indices visuels et étoiles !",
-        descHi = "जादुई संकेतों और सितारों के साथ 5 पहेलियाँ!",
+        descId = "5 tantangan terpandu dengan petunjuk visual dan penghargaan bintang.",
+        descEn = "5 guided challenges with visual hints and star rewards.",
+        descEs = "5 acertijos con pistas visuales y recompensas.",
+        descFr = "5 défis guidés avec indices visuels et étoiles.",
+        descHi = "मार्गदर्शित चुनौतियों और सितारों के साथ 5 पहेलियाँ।",
         colorHex = 0xFF4F46E5,
         questionCount = 5,
         timeLimitSeconds = 0,
@@ -121,17 +123,17 @@ enum class GamePlayMode(
     ),
     STAR_BLITZ(
         id = "star_blitz",
-        emoji = "⚡",
+        iconKey = "bolt",
         titleId = "Kilat Bintang",
         titleEn = "Star Blitz",
         titleEs = "Relámpago",
         titleFr = "Éclair",
         titleHi = "सुपर स्पीड",
-        descId = "Tantangan cepat 60 detik dengan bonus bintang ekstra!",
-        descEn = "60-second speed challenge with bonus stars!",
-        descEs = "¡Reto rápido de 60 segundos con estrellas extra!",
-        descFr = "Défi rapide de 60 secondes avec étoiles bonus !",
-        descHi = "बोनस सितारों के साथ 60-सेकंड की तेज़ चुनौती!",
+        descId = "Tantangan kecepatan 60 detik dengan bonus bintang ekstra.",
+        descEn = "60-second speed challenge with extra bonus stars.",
+        descEs = "Reto rápido de 60 segundos con estrellas extra.",
+        descFr = "Défi rapide de 60 secondes avec étoiles bonus.",
+        descHi = "बोनस सितारों के साथ 60-सेकंड की तेज़ चुनौती।",
         colorHex = 0xFFFF6B35,
         questionCount = 6,
         timeLimitSeconds = 60,
@@ -139,17 +141,17 @@ enum class GamePlayMode(
     ),
     ZEN_PRACTICE(
         id = "zen_practice",
-        emoji = "🌈",
+        iconKey = "spa",
         titleId = "Latihan Santai",
         titleEn = "Zen Practice",
         titleEs = "Modo Zen",
         titleFr = "Mode Zen",
         titleHi = "आरामदायक",
-        descId = "Belajar santai tanpa batas waktu + ketuk objek untuk menghitung!",
-        descEn = "Relaxed learning with tap-to-count visual helpers!",
-        descEs = "¡Aprendizaje relajado contando objetos visuales!",
-        descFr = "Apprentissage calme avec aide visuelle interactive !",
-        descHi = "बिना समय सीमा के विजुअल वस्तुओं को टैप करके सीखें!",
+        descId = "Belajar santai tanpa batas waktu dengan bantuan hitung visual interaktif.",
+        descEn = "Relaxed learning with interactive visual counting counters.",
+        descEs = "Aprendizaje relajado con conteo visual interactivo.",
+        descFr = "Apprentissage calme avec aide au comptage visuel.",
+        descHi = "बिना समय सीमा के विजुअल वस्तुओं से सीखें।",
         colorHex = 0xFF10B981,
         questionCount = 4,
         timeLimitSeconds = 0,
@@ -157,17 +159,17 @@ enum class GamePlayMode(
     ),
     DAILY_QUEST(
         id = "daily_quest",
-        emoji = "🏆",
+        iconKey = "trophy",
         titleId = "Misi Harian",
         titleEn = "Daily Quest",
         titleEs = "Misión Diaria",
         titleFr = "Quête du Jour",
         titleHi = "दैनिक मिशन",
-        descId = "Misi spesial hari ini untuk hadiah +3 bintang emas!",
-        descEn = "Special daily challenge for +3 bonus golden stars!",
-        descEs = "¡Misión especial diaria por +3 estrellas doradas!",
-        descFr = "Mission spéciale du jour pour +3 étoiles dorées !",
-        descHi = "+3 बोनस सुनहरे सितारों के लिए विशेष दैनिक मिशन!",
+        descId = "Tantangan spesial harian untuk meraih hadiah bintang emas ekstra.",
+        descEn = "Special daily challenge for bonus golden stars.",
+        descEs = "Misión especial diaria por estrellas doradas extra.",
+        descFr = "Mission spéciale du jour pour des étoiles dorées bonus.",
+        descHi = "बोनस सुनहरे सितारों के लिए विशेष दैनिक मिशन।",
         colorHex = 0xFFE91E63,
         questionCount = 5,
         timeLimitSeconds = 90,
@@ -193,7 +195,7 @@ enum class GamePlayMode(
 
 enum class AgeGroupConfig(
     val code: String,
-    val iconEmoji: String,
+    val iconKey: String,
     val titleId: String,
     val titleEn: String,
     val titleEs: String,
@@ -202,7 +204,7 @@ enum class AgeGroupConfig(
 ) {
     AGES_4_6(
         code = "4-6",
-        iconEmoji = "🌱",
+        iconKey = "early",
         titleId = "4–6 Tahun",
         titleEn = "Ages 4–6",
         titleEs = "4–6 Años",
@@ -211,7 +213,7 @@ enum class AgeGroupConfig(
     ),
     AGES_7_9(
         code = "7-9",
-        iconEmoji = "🚀",
+        iconKey = "junior",
         titleId = "7–9 Tahun",
         titleEn = "Ages 7–9",
         titleEs = "7–9 Años",
@@ -220,7 +222,7 @@ enum class AgeGroupConfig(
     ),
     AGES_10_13(
         code = "10-13",
-        iconEmoji = "⚡",
+        iconKey = "senior",
         titleId = "10–13 Tahun",
         titleEn = "Ages 10–13",
         titleEs = "10–13 Años",
@@ -256,7 +258,7 @@ enum class BuddyReaction {
 
 enum class BuddyCharacter(
     val id: String,
-    val emoji: String,
+    val iconKey: String,
     val primaryColorHex: Long,
     val secondaryColorHex: Long,
     val nameId: String,
@@ -272,7 +274,7 @@ enum class BuddyCharacter(
 ) {
     KOMODO(
         id = "komodo",
-        emoji = "🦎",
+        iconKey = "dragon",
         primaryColorHex = 0xFF00897B,
         secondaryColorHex = 0xFFFFCA28,
         nameId = "Bima Komodo",
@@ -288,7 +290,7 @@ enum class BuddyCharacter(
     ),
     SPARKY(
         id = "sparky",
-        emoji = "🦊",
+        iconKey = "fox",
         primaryColorHex = 0xFFFF7043,
         secondaryColorHex = 0xFFFFCA28,
         nameId = "Sparky Rubah",
@@ -304,7 +306,7 @@ enum class BuddyCharacter(
     ),
     LUNA(
         id = "luna",
-        emoji = "🦉",
+        iconKey = "owl",
         primaryColorHex = 0xFF7E57C2,
         secondaryColorHex = 0xFF26C6DA,
         nameId = "Luna Burung Hantu",
@@ -320,7 +322,7 @@ enum class BuddyCharacter(
     ),
     ROBOBIT(
         id = "robobit",
-        emoji = "🤖",
+        iconKey = "robot",
         primaryColorHex = 0xFF26A69A,
         secondaryColorHex = 0xFF42A5F5,
         nameId = "RoboBit Pintar",
@@ -336,7 +338,7 @@ enum class BuddyCharacter(
     ),
     SUNNY(
         id = "sunny",
-        emoji = "🦁",
+        iconKey = "lion",
         primaryColorHex = 0xFFFFB300,
         secondaryColorHex = 0xFFEC407A,
         nameId = "Sunny Singa",
@@ -369,13 +371,13 @@ enum class BuddyCharacter(
 
     companion object {
         fun fromId(id: String): BuddyCharacter =
-            entries.find { it.id == id } ?: SPARKY
+            entries.find { it.id == id } ?: KOMODO
     }
 }
 
 enum class MiniGameType(
     val id: String,
-    val emoji: String,
+    val iconKey: String,
     val accentColorHex: Long,
     val isMath: Boolean,
     val titleId: String,
@@ -391,7 +393,7 @@ enum class MiniGameType(
 ) {
     MATH_SAFARI(
         id = "math_safari",
-        emoji = "🦁",
+        iconKey = "calculate",
         accentColorHex = 0xFFFF7043,
         isMath = true,
         titleId = "Safari Matematika",
@@ -399,15 +401,15 @@ enum class MiniGameType(
         titleEs = "Safari Matemático",
         titleFr = "Safari Maths",
         titleHi = "गणित सफारी",
-        subtitleId = "Ketuk hewan untuk menghitung, menjumlah, dan mengalikan!",
-        subtitleEn = "Tap animals to count, add, subtract & multiply!",
-        subtitleEs = "¡Toca animales para contar, sumar y multiplicar!",
-        subtitleFr = "Touche les animaux pour compter et calculer !",
-        subtitleHi = "गिनने, जोड़ने और गुणा करने के लिए जानवरों को टैप करें!"
+        subtitleId = "Ketuk kristal visual untuk menghitung, menjumlah, dan mengalikan.",
+        subtitleEn = "Tap visual crystals to count, add, subtract & multiply.",
+        subtitleEs = "Toca cristales para contar, sumar y multiplicar.",
+        subtitleFr = "Touche les cristaux pour compter et calculer.",
+        subtitleHi = "गिनने, जोड़ने और गुणा करने के लिए विजुअल क्रिस्टल टैप करें।"
     ),
     PATTERN_PORTAL(
         id = "pattern_portal",
-        emoji = "🔮",
+        iconKey = "extension",
         accentColorHex = 0xFF7E57C2,
         isMath = false,
         titleId = "Portal Pola Ajaib",
@@ -415,15 +417,15 @@ enum class MiniGameType(
         titleEs = "Portal de Patrones",
         titleFr = "Portail des Motifs",
         titleHi = "पैटर्न पोर्टल",
-        subtitleId = "Lengkapi urutan kristal bercahaya untuk membuka portal!",
-        subtitleEn = "Complete glowing crystal sequences to open the portal!",
-        subtitleEs = "¡Completa las secuencias mágicas de cristal!",
-        subtitleFr = "Complète les séquences magiques de cristal !",
-        subtitleHi = "जादुई क्रिस्टल अनुक्रम पूरा करें!"
+        subtitleId = "Lengkapi urutan kristal bercahaya untuk membuka portal ruang.",
+        subtitleEn = "Complete glowing crystal sequences to open the portal.",
+        subtitleEs = "Completa las secuencias mágicas de cristal.",
+        subtitleFr = "Complète les séquences magiques de cristal.",
+        subtitleHi = "जादुई क्रिस्टल अनुक्रम पूरा करें।"
     ),
     NUMBER_BRIDGE(
         id = "number_bridge",
-        emoji = "🌉",
+        iconKey = "alt_route",
         accentColorHex = 0xFF26A69A,
         isMath = true,
         titleId = "Jembatan Angka",
@@ -431,15 +433,15 @@ enum class MiniGameType(
         titleEs = "Puente Numérico",
         titleFr = "Pont des Nombres",
         titleHi = "नंबर ब्रिज",
-        subtitleId = "Temukan batu loncatan angka yang hilang untuk menyeberang!",
-        subtitleEn = "Find missing stepping stones & skip-count across!",
-        subtitleEs = "¡Encuentra los escalones perdidos en el puente!",
-        subtitleFr = "Trouve les pierres manquantes sur le pont !",
-        subtitleHi = "पुल पार करने के लिए गायब संख्याएँ खोजें!"
+        subtitleId = "Temukan batu loncatan angka yang hilang untuk menyeberang sungai.",
+        subtitleEn = "Find missing stepping stones & skip-count across.",
+        subtitleEs = "Encuentra los escalones perdidos en el puente.",
+        subtitleFr = "Trouve les pierres manquantes sur le pont.",
+        subtitleHi = "पुल पार करने के लिए गायब संख्याएँ खोजें।"
     ),
     LOGIC_MATRIX(
         id = "logic_matrix",
-        emoji = "🧩",
+        iconKey = "psychology",
         accentColorHex = 0xFFEC407A,
         isMath = false,
         titleId = "Matriks Logika",
@@ -447,15 +449,15 @@ enum class MiniGameType(
         titleEs = "Matriz Lógica",
         titleFr = "Matrice Logique",
         titleHi = "लॉजिक मैट्रिक्स",
-        subtitleId = "Cocokkan petunjuk visual dan pecahkan teka-teki harta!",
-        subtitleEn = "Match visual clues and solve the treasure grid!",
-        subtitleEs = "¡Une pistas visuales y resuelve el enigma!",
-        subtitleFr = "Associe les indices et résous la grille !",
-        subtitleHi = "सुराग मिलाएं और पहेली सुलझाएं!"
+        subtitleId = "Cocokkan petunjuk visual dan pecahkan teka-teki logika ruang.",
+        subtitleEn = "Match visual clues and solve the logic matrix grid.",
+        subtitleEs = "Une pistas visuales y resuelve el enigma.",
+        subtitleFr = "Associe les indices et résous la grille logique.",
+        subtitleHi = "सुराग मिलाएं और पहेली सुलझाएं।"
     ),
     SHAPE_GALAXY(
         id = "shape_galaxy",
-        emoji = "🪐",
+        iconKey = "category",
         accentColorHex = 0xFF29B6F6,
         isMath = true,
         titleId = "Galaksi Bentuk",
@@ -463,15 +465,15 @@ enum class MiniGameType(
         titleEs = "Galaxia Geométrica",
         titleFr = "Galaxie des Formes",
         titleHi = "आकृति गैलेक्सी",
-        subtitleId = "Hitung titik sudut bercahaya & sisi bangun geometri luar angkasa!",
-        subtitleEn = "Count glowing vertices & sides on animated space polygons!",
-        subtitleEs = "¡Cuenta las esquinas brillantes y lados geométricos!",
-        subtitleFr = "Compte les sommets lumineux et les côtés géométriques !",
-        subtitleHi = "चमकती ज्यामितीय आकृतियों के कोने और भुजाएँ गिनें!"
+        subtitleId = "Hitung titik sudut bercahaya dan sisi bangun geometri poligon.",
+        subtitleEn = "Count glowing vertices and sides on space polygons.",
+        subtitleEs = "Cuenta las esquinas brillantes y lados geométricos.",
+        subtitleFr = "Compte les sommets lumineux et les côtés géométriques.",
+        subtitleHi = "ज्यामितीय आकृतियों के कोने और भुजाएँ गिनें।"
     ),
     MEMORY_TREASURE(
         id = "memory_treasure",
-        emoji = "💎",
+        iconKey = "diamond",
         accentColorHex = 0xFFFFB300,
         isMath = false,
         titleId = "Memori Harta Karun",
@@ -479,15 +481,15 @@ enum class MiniGameType(
         titleEs = "Tesoro de Memoria",
         titleFr = "Trésor de Mémoire",
         titleHi = "मेमोरी खजाना",
-        subtitleId = "Ingat urutan permata pulau dan tebak isi peti rahasia!",
-        subtitleEn = "Remember the island gems and unlock the secret chest!",
-        subtitleEs = "¡Recuerda las gemas y abre el cofre secreto!",
-        subtitleFr = "Mémorise les joyaux et ouvre le coffre secret !",
-        subtitleHi = "रत्नों को याद रखें और गुप्त तिजोरी खोलें!"
+        subtitleId = "Ingat urutan permata pulau dan tebak isi peti rahasia.",
+        subtitleEn = "Remember island gem sequences and unlock the secret chest.",
+        subtitleEs = "Recuerda las gemas y abre el cofre secreto.",
+        subtitleFr = "Mémorise les joyaux et ouvre le coffre secret.",
+        subtitleHi = "रत्नों को याद रखें और गुप्त तिजोरी खोलें।"
     ),
     COSMIC_BALANCE(
         id = "cosmic_balance",
-        emoji = "⚖️",
+        iconKey = "balance",
         accentColorHex = 0xFF5C6BC0,
         isMath = true,
         titleId = "Timbangan Kosmik",
@@ -495,11 +497,11 @@ enum class MiniGameType(
         titleEs = "Balanza Cósmica",
         titleFr = "Balance Cosmique",
         titleHi = "कॉस्मिक तराजू",
-        subtitleId = "Seimbangkan timbangan bintang dengan jumlah beban yang tepat!",
-        subtitleEn = "Balance the animated star scale with the missing weight!",
-        subtitleEs = "¡Equilibra la balanza estelar animada!",
-        subtitleFr = "Équilibre la balance stellaire animée !",
-        subtitleHi = "एनिमेटेड तराजू पर सितारों का संतुलन बनाएं!"
+        subtitleId = "Seimbangkan timbangan bintang dengan jumlah beban yang presisi.",
+        subtitleEn = "Balance the star scale with the missing weight.",
+        subtitleEs = "Equilibra la balanza estelar con el peso faltante.",
+        subtitleFr = "Équilibre la balance stellaire avec le poids manquant.",
+        subtitleHi = "तराजू पर सितारों का सटीक संतुलन बनाएं।"
     );
 
     fun localizedTitle(lang: String): String = when (lang) {
@@ -526,8 +528,11 @@ enum class MiniGameType(
 
 data class BadgeDefinition(
     val id: String,
-    val emoji: String,
+    val iconKey: String,
     val colorHex: Long,
+    val targetMetric: String,
+    val targetValue: Long,
+    val rewardBonusStars: Long,
     val titleId: String,
     val titleEn: String,
     val titleEs: String,
@@ -554,129 +559,171 @@ data class BadgeDefinition(
         "hi" -> descHi
         else -> descId
     }
+
+    fun currentProgress(profile: ChildProfile): Long = when (targetMetric) {
+        "math" -> profile.mathScore
+        "logic" -> profile.logicScore
+        "stars" -> profile.totalStars
+        "levels" -> profile.completedLevelsCount
+        "streak" -> profile.streakDays
+        "galaxy" -> if (profile.unlockedBadges.contains(id)) 1L else 0L
+        else -> if (profile.unlockedBadges.contains(id)) 1L else 0L
+    }
 }
+
+data class AchievementReward(
+    val badge: BadgeDefinition,
+    val bonusStars: Long,
+    val isNewUnlock: Boolean
+)
 
 object BadgeCatalog {
     val allBadges: List<BadgeDefinition> = listOf(
         BadgeDefinition(
             id = "curious_buddy",
-            emoji = "🌟",
+            iconKey = "star",
             colorHex = 0xFFFFB300,
+            targetMetric = "start",
+            targetValue = 1L,
+            rewardBonusStars = 1L,
             titleId = "Sahabat Penasaran",
             titleEn = "Curious Buddy",
             titleEs = "Amigo Curioso",
             titleFr = "Ami Curieux",
             titleHi = "जिज्ञासु दोस्त",
-            descId = "Memulai petualangan seru di Pulau WonderQuest!",
-            descEn = "Joined WonderQuest Island!",
-            descEs = "¡Comenzó la aventura en la isla!",
-            descFr = "A rejoint l'île WonderQuest !",
-            descHi = "वंडरक्वेस्ट द्वीप की यात्रा शुरू की!"
+            descId = "Memulai petualangan belajar di Pulau WonderQuest.",
+            descEn = "Started learning journey on WonderQuest Island.",
+            descEs = "Inició la aventura en la isla WonderQuest.",
+            descFr = "A commencé l'aventure sur l'île WonderQuest.",
+            descHi = "वंडरक्वेस्ट द्वीप पर सीखने की यात्रा शुरू की।"
         ),
         BadgeDefinition(
             id = "first_quest",
-            emoji = "🗺️",
+            iconKey = "explore",
             colorHex = 0xFF26A69A,
+            targetMetric = "levels",
+            targetValue = 1L,
+            rewardBonusStars = 2L,
             titleId = "Penjelajah Pertama",
             titleEn = "First Explorer",
             titleEs = "Primer Explorador",
             titleFr = "Premier Explorateur",
             titleHi = "पहला खोजकर्ता",
-            descId = "Menyelesaikan tantangan belajar pertamamu!",
-            descEn = "Completed your very first learning quest!",
-            descEs = "¡Completaste tu primera misión!",
-            descFr = "Première quête terminée !",
-            descHi = "पहला मिशन पूरा किया!"
+            descId = "Selesaikan 1 level tantangan matematika atau logika.",
+            descEn = "Complete 1 math or logic challenge level.",
+            descEs = "Completa 1 nivel de desafío matemático o lógico.",
+            descFr = "Termine 1 niveau de défi mathématique ou logique.",
+            descHi = "1 गणित या तर्क चुनौती स्तर पूरा करें।"
         ),
         BadgeDefinition(
             id = "star_collector",
-            emoji = "⭐",
+            iconKey = "military_tech",
             colorHex = 0xFFFF7043,
-            titleId = "Kolektor Bintang",
+            targetMetric = "stars",
+            targetValue = 10L,
+            rewardBonusStars = 3L,
+            titleId = "Kolektor Bintang Emas",
             titleEn = "Star Collector",
             titleEs = "Coleccionista Estelar",
             titleFr = "Collectionneur d'Étoiles",
             titleHi = "स्टार कलेक्टर",
-            descId = "Mengumpulkan 10 bintang emas berkilau!",
-            descEn = "Collected 10+ golden stars!",
-            descEs = "¡Coleccionaste 10 estrellas!",
-            descFr = "10 étoiles dorées gagnées !",
-            descHi = "10 सुनहरे सितारे जमा किए!"
+            descId = "Raih 10 bintang emas dari berbagai permainan.",
+            descEn = "Earn 10 golden stars across all learning games.",
+            descEs = "Gana 10 estrellas doradas en todos los juegos.",
+            descFr = "Gagne 10 étoiles dorées dans les jeux.",
+            descHi = "सभी खेलों में 10 सुनहरे सितारे प्राप्त करें।"
         ),
         BadgeDefinition(
             id = "math_whiz",
-            emoji = "🔢",
+            iconKey = "calculate",
             colorHex = 0xFF42A5F5,
-            titleId = "Juara Matematika",
+            targetMetric = "math",
+            targetValue = 100L,
+            rewardBonusStars = 3L,
+            titleId = "Pakar Matematika",
             titleEn = "Math Whiz",
             titleEs = "Genio Matemático",
             titleFr = "As des Maths",
             titleHi = "गणित चैंपियन",
-            descId = "Meraih 100+ poin di petualangan Matematika!",
-            descEn = "Reached 100+ Math points!",
-            descEs = "¡Alcanzaste 100 puntos en Matemáticas!",
-            descFr = "100 points en Maths !",
-            descHi = "गणित में 100+ अंक प्राप्त किए!"
+            descId = "Kumpulkan 100 poin di wahana Safari, Jembatan, atau Timbangan.",
+            descEn = "Score 100+ points in Math Safari, Bridge, or Balance.",
+            descEs = "Alcanza 100+ puntos en retos matemáticos.",
+            descFr = "Marque 100+ points dans les défis mathématiques.",
+            descHi = "गणित के खेलों में 100+ अंक प्राप्त करें।"
         ),
         BadgeDefinition(
             id = "logic_master",
-            emoji = "🧠",
+            iconKey = "psychology",
             colorHex = 0xFF7E57C2,
-            titleId = "Ahli Logika",
+            targetMetric = "logic",
+            targetValue = 100L,
+            rewardBonusStars = 3L,
+            titleId = "Master Logika",
             titleEn = "Logic Master",
             titleEs = "Maestro Lógico",
             titleFr = "Maître Logique",
             titleHi = "तर्क मास्टर",
-            descId = "Meraih 100+ poin di Portal Pola & Matriks Logika!",
-            descEn = "Reached 100+ Logic points!",
-            descEs = "¡Alcanzaste 100 puntos en Lógica!",
-            descFr = "100 points en Logique !",
-            descHi = "तर्क में 100+ अंक प्राप्त किए!"
+            descId = "Kumpulkan 100 poin di Portal Pola, Matriks, atau Memori.",
+            descEn = "Score 100+ points in Pattern, Matrix, or Memory.",
+            descEs = "Alcanza 100+ puntos en lógica y patrones.",
+            descFr = "Marque 100+ points en logique et suites de formes.",
+            descHi = "तर्क और पैटर्न खेलों में 100+ अंक प्राप्त करें।"
         ),
         BadgeDefinition(
             id = "super_streak",
-            emoji = "🔥",
+            iconKey = "workspace_premium",
             colorHex = 0xFFEC407A,
-            titleId = "Sempurna 100%",
-            titleEn = "Super Streak",
-            titleEs = "Súper Racha",
-            titleFr = "Super Série",
-            titleHi = "सुपर स्ट्रीक",
-            descId = "Menjawab semua pertanyaan dengan benar dalam satu level!",
-            descEn = "Earned a perfect score in a mini-game!",
-            descEs = "¡Puntaje perfecto en una misión!",
-            descFr = "Score parfait dans un jeu !",
-            descHi = "एक खेल में पूरे अंक पाए!"
+            targetMetric = "streak",
+            targetValue = 1L,
+            rewardBonusStars = 2L,
+            titleId = "Akurasi Sempurna",
+            titleEn = "Perfect Streak",
+            titleEs = "Racha Perfecta",
+            titleFr = "Série Parfaite",
+            titleHi = "सटीक विजय",
+            descId = "Jawab semua tantangan dengan benar dalam satu putaran.",
+            descEn = "Answer all questions correctly in a single level.",
+            descEs = "Responde todos los acertijos correctamente en un nivel.",
+            descFr = "Réponds correctement à toutes les questions d'un niveau.",
+            descHi = "एक स्तर में सभी प्रश्नों का सही उत्तर दें।"
         ),
         BadgeDefinition(
             id = "galaxy_explorer",
-            emoji = "🛸",
+            iconKey = "category",
             colorHex = 0xFF00ACC1,
-            titleId = "Kapten Galaksi",
-            titleEn = "Galaxy Captain",
-            titleEs = "Capitán Galáctico",
-            titleFr = "Capitaine Galactique",
-            titleHi = "गैलेक्सी कैप्टन",
-            descId = "Menaklukkan tantangan Galaksi Bentuk atau Timbangan Kosmik!",
-            descEn = "Conquered Shape Galaxy or Cosmic Balance!",
-            descEs = "¡Conquistaste Galaxia Geométrica o Balanza Cósmica!",
-            descFr = "A conquis Galaxie des Formes ou Balance Cosmique !",
-            descHi = "आकृति गैलेक्सी या कॉस्मिक तराजू जीता!"
+            targetMetric = "galaxy",
+            targetValue = 1L,
+            rewardBonusStars = 3L,
+            titleId = "Kapten Geometri Galaksi",
+            titleEn = "Galaxy Geometry Captain",
+            titleEs = "Capitán Geométrico",
+            titleFr = "Capitaine Géométrie",
+            titleHi = "ज्यामिति कप्तान",
+            descId = "Selesaikan misi di Galaksi Bentuk atau Timbangan Kosmik.",
+            descEn = "Complete a mission in Shape Galaxy or Cosmic Balance.",
+            descEs = "Completa una misión en Galaxia o Balanza.",
+            descFr = "Réussis une mission dans Galaxie des Formes ou Balance.",
+            descHi = "आकृति गैलेक्सी या कॉस्मिक तराजू का मिशन पूरा करें।"
         ),
         BadgeDefinition(
             id = "island_champion",
-            emoji = "👑",
+            iconKey = "champion",
             colorHex = 0xFF66BB6A,
+            targetMetric = "levels",
+            targetValue = 5L,
+            rewardBonusStars = 5L,
             titleId = "Legenda Pulau",
             titleEn = "Island Legend",
             titleEs = "Campeón de la Isla",
             titleFr = "Champion de l'Île",
             titleHi = "द्वीप चैंपियन",
-            descId = "Menyelesaikan 5 level petualangan di Pulau WonderQuest!",
-            descEn = "Completed 5+ levels across the island!",
-            descEs = "¡Completaste 5 niveles en la isla!",
-            descFr = "5 niveaux terminés sur l'île !",
-            descHi = "द्वीप पर 5 लेवल पूरे किए!"
+            descId = "Selesaikan 5 level petualangan di Pulau WonderQuest.",
+            descEn = "Complete 5 adventure levels across the island.",
+            descEs = "Completa 5 niveles en la isla.",
+            descFr = "Termine 5 niveaux sur l'île WonderQuest.",
+            descHi = "द्वीप पर 5 स्तर पूरे करें।"
         )
     )
+
+    fun findById(id: String): BadgeDefinition? = allBadges.find { it.id == id }
 }

@@ -24,9 +24,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SdStorage
@@ -45,6 +48,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.example.ui.components.WonderQuestIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -197,12 +201,14 @@ fun ParentalDashboardScreen(
                             title = strings.mathPointsLabel,
                             value = "${profile.mathScore}",
                             accent = Color(0xFFFF7043),
+                            icon = Icons.Default.Calculate,
                             modifier = Modifier.weight(1f).testTag("dashboard_math_score")
                         )
                         DashboardMetricBox(
                             title = strings.logicPointsLabel,
                             value = "${profile.logicScore}",
                             accent = Color(0xFF7E57C2),
+                            icon = Icons.Default.Psychology,
                             modifier = Modifier.weight(1f).testTag("dashboard_logic_score")
                         )
                     }
@@ -213,14 +219,16 @@ fun ParentalDashboardScreen(
                     ) {
                         DashboardMetricBox(
                             title = strings.starsLabel,
-                            value = "⭐ ${profile.totalStars}",
+                            value = "${profile.totalStars}",
                             accent = Color(0xFFFFB300),
+                            icon = Icons.Default.Star,
                             modifier = Modifier.weight(1f)
                         )
                         DashboardMetricBox(
                             title = strings.levelsLabel,
-                            value = "🏆 ${profile.completedLevelsCount}",
+                            value = "${profile.completedLevelsCount}",
                             accent = Color(0xFF26A69A),
+                            icon = Icons.Default.EmojiEvents,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -230,7 +238,7 @@ fun ParentalDashboardScreen(
                     val mathRatio = (profile.mathScore.toFloat() / totalPoints.toFloat()).coerceIn(0.15f, 0.85f)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "🔢 ${strings.mathPointsLabel} vs 🧩 ${strings.logicPointsLabel}",
+                            text = "${strings.mathPointsLabel} vs ${strings.logicPointsLabel}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -536,6 +544,7 @@ private fun DashboardMetricBox(
     title: String,
     value: String,
     accent: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -549,12 +558,21 @@ private fun DashboardMetricBox(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = accent
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = accent
+                )
+            }
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
@@ -597,7 +615,11 @@ private fun SessionHistoryRow(
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = gameType.emoji, style = MaterialTheme.typography.titleLarge)
+                        WonderQuestIcon(
+                            iconKey = gameType.iconKey,
+                            tint = accent,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
                 Column {

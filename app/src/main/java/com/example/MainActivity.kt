@@ -60,6 +60,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        runCatching {
+            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                com.google.firebase.FirebaseApp.initializeApp(this)
+            }
+        }
         setContent {
             WonderQuestRoot()
         }
@@ -74,7 +79,7 @@ fun WonderQuestRoot(
     val scope = rememberCoroutineScope()
     val authManager = remember { AuthManager() }
     val currentUser by authManager.authState.collectAsStateWithLifecycle(
-        initialValue = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        initialValue = authManager.currentUser
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

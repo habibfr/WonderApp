@@ -3,13 +3,19 @@ package com.example.ui.auth
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,17 +37,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VerifiedUser
+import com.example.ui.components.BuddyMiniAvatar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -92,17 +101,31 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 class AuthManager(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    customAuth: FirebaseAuth? = null
 ) {
+    private val auth: FirebaseAuth? = customAuth ?: runCatching {
+        FirebaseAuth.getInstance()
+    }.getOrNull()
+
+    val currentUser: FirebaseUser?
+        get() = auth?.currentUser
+
     val authState: Flow<FirebaseUser?> = callbackFlow {
+        val currentAuth = auth
+        if (currentAuth == null) {
+            trySend(null)
+            awaitClose { }
+            return@callbackFlow
+        }
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             trySend(firebaseAuth.currentUser)
         }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
+        currentAuth.addAuthStateListener(listener)
+        awaitClose { currentAuth.removeAuthStateListener(listener) }
     }
 
     suspend fun signInWithGoogle(activityContext: Context, webClientId: String): Result<FirebaseUser?> {
+        val currentAuth = auth ?: return Result.failure(IllegalStateException("Firebase Auth is not initialized yet. Please try again or use Guest Mode."))
         return try {
             val credentialManager = CredentialManager.create(activityContext)
             val googleOption = GetSignInWithGoogleOption.Builder(webClientId).build()
@@ -117,7 +140,7 @@ class AuthManager(
             ) {
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
-                val authResult = auth.signInWithCredential(firebaseCredential).await()
+                val authResult = currentAuth.signInWithCredential(firebaseCredential).await()
                 Result.success(authResult.user)
             } else {
                 Result.failure(IllegalStateException("Unexpected credential type."))
@@ -130,7 +153,7 @@ class AuthManager(
     }
 
     fun signOut() {
-        auth.signOut()
+        auth?.signOut()
     }
 }
 
@@ -155,22 +178,13 @@ fun WonderQuestSignInScreen(
 
     val infinite = rememberInfiniteTransition(label = "welcome_motion")
     val floatOffset by infinite.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
+        initialValue = -5f,
+        targetValue = 5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1600, easing = FastOutSlowInEasing),
+            animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "float_offset"
-    )
-    val pulseScale by infinite.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1100, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
     )
 
     Box(
@@ -185,12 +199,12 @@ fun WonderQuestSignInScreen(
                     )
                 )
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier
-                .widthIn(max = 520.dp)
+                .widthIn(max = 540.dp)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
             shape = RoundedCornerShape(32.dp),
@@ -200,9 +214,11 @@ fun WonderQuestSignInScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Top Tagline Badge
                 Surface(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     shape = RoundedCornerShape(50),
@@ -228,207 +244,383 @@ fun WonderQuestSignInScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Interactive Mascot Switcher & Animated Stage
-                Box(
-                    modifier = Modifier
-                        .offset(y = floatOffset.dp)
-                        .clickable {
-                            mascotReaction = when (mascotReaction) {
-                                BuddyReaction.DANCING -> BuddyReaction.SPARKLE
-                                BuddyReaction.SPARKLE -> BuddyReaction.EATING_TREAT
-                                BuddyReaction.EATING_TREAT -> BuddyReaction.MAGIC_WAND
-                                else -> BuddyReaction.DANCING
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    AnimatedBuddyCanvas(
-                        character = selectedMascot,
-                        reaction = mascotReaction,
-                        modifier = Modifier
-                            .size(168.dp)
-                            .testTag("welcome_buddy_canvas")
+                // Title and App Name
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = strings.signInTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                // Quick character switcher row on welcome screen
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Interactive Animated Mascot with Speech Bubble
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    BuddyCharacter.entries.forEach { buddy ->
-                        val isSelected = buddy == selectedMascot
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isSelected) Color(buddy.primaryColorHex).copy(alpha = 0.25f)
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier
-                                .size(if (isSelected) 44.dp else 38.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    selectedMascot = buddy
-                                    mascotReaction = BuddyReaction.HIGH_FIVE
-                                }
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(text = buddy.emoji, fontSize = if (isSelected) 22.sp else 18.sp)
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = strings.signInTitle,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = strings.signInSubtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (hasSavedDeviceProgress || savedStarsCount > 0L) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    // Speech bubble greeting
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "💾 ⭐ $savedStarsCount", fontWeight = FontWeight.ExtraBold)
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.welcomeGreeting,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // Mascot Canvas with float animation
+                    Box(
+                        modifier = Modifier
+                            .offset(y = floatOffset.dp)
+                            .clickable {
+                                mascotReaction = when (mascotReaction) {
+                                    BuddyReaction.DANCING -> BuddyReaction.SPARKLE
+                                    BuddyReaction.SPARKLE -> BuddyReaction.EATING_TREAT
+                                    BuddyReaction.EATING_TREAT -> BuddyReaction.HIGH_FIVE
+                                    else -> BuddyReaction.DANCING
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedBuddyCanvas(
+                            character = selectedMascot,
+                            reaction = mascotReaction,
+                            modifier = Modifier
+                                .size(148.dp)
+                                .testTag("welcome_buddy_canvas")
+                        )
+                    }
+
+                    // Quick Character Switcher Row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BuddyCharacter.entries.forEach { buddy ->
+                            val isSelected = buddy == selectedMascot
+                            val accent = Color(buddy.primaryColorHex)
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isSelected) accent.copy(alpha = 0.28f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, accent) else null,
+                                modifier = Modifier
+                                    .size(if (isSelected) 46.dp else 38.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        selectedMascot = buddy
+                                        mascotReaction = BuddyReaction.HIGH_FIVE
+                                    }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    BuddyMiniAvatar(
+                                        character = buddy,
+                                        isSelected = isSelected,
+                                        modifier = Modifier.size(if (isSelected) 34.dp else 28.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // If device already has stars saved locally in Guest Mode, show status card
+                if (hasSavedDeviceProgress || savedStarsCount > 0L) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "$savedStarsCount", fontWeight = FontWeight.ExtraBold)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.guestSavedOnDeviceStatus,
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
+                // STEP 1: Multilingual Language Selector
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    WonderQuestStrings.supportedLanguages.forEach { (code, label) ->
-                        FilterChip(
-                            selected = languageCode == code,
-                            onClick = { onLanguageSelected(code) },
-                            label = { Text(label) },
-                            modifier = Modifier.testTag("welcome_lang_$code")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = strings.welcomeStepLanguage,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        WonderQuestStrings.supportedLanguages.forEach { (code, label) ->
+                            val isSelected = languageCode == code
+                            val scale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.05f else 1f,
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "lang_scale_$code"
+                            )
+                            val containerColor by animateColorAsState(
+                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                label = "lang_bg_$code"
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = containerColor,
+                                tonalElevation = if (isSelected) 4.dp else 0.dp,
+                                modifier = Modifier
+                                    .scale(scale)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable {
+                                        onLanguageSelected(code)
+                                        mascotReaction = BuddyReaction.DANCING
+                                    }
+                                    .testTag("welcome_lang_$code")
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Primary CTA 1: Guest Mode (Save on Device Storage immediately!)
-                Button(
-                    onClick = onGuestModeStart,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp)
-                        .scale(pulseScale)
-                        .testTag("guest_play_button"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onSecondary
-                    )
+                // STEP 2: Choose Game Mode (Guest vs Cloud Login)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.SportsEsports,
-                        contentDescription = strings.guestPlayButton
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = strings.guestPlayButton,
+                        text = strings.welcomeStepMode,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    // Option A: Guest Mode Card (Save on Device)
+                    Card(
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SdStorage,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column {
+                                    Text(
+                                        text = strings.guestPlayButton,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Text(
+                                        text = strings.guestModeDesc,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
 
-                // Primary CTA 2: Sign In with Google (Auto-Sync Firebase Cloud)
-                ElevatedButton(
-                    onClick = {
-                        val activity = context.findActivity()
-                        if (activity == null) {
-                            errorMessage = "Activity context unavailable."
-                            return@ElevatedButton
+                            Button(
+                                onClick = onGuestModeStart,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                                    .testTag("guest_play_button"),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary,
+                                    contentColor = MaterialTheme.colorScheme.onSecondary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SportsEsports,
+                                    contentDescription = strings.guestPlayButton
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = strings.guestPlayButton,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
                         }
-                        isSigningIn = true
-                        errorMessage = null
-                        scope.launch {
-                            val result = onSignInRequest(activity)
-                            isSigningIn = false
-                            result.onFailure { err ->
-                                if (err !is GetCredentialCancellationException) {
-                                    errorMessage = err.localizedMessage ?: "Sign-in failed."
+                    }
+
+                    // Option B: Google Cloud Login Card (Auto-Sync Firebase)
+                    Card(
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudSync,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column {
+                                    Text(
+                                        text = strings.signInButton,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Text(
+                                        text = strings.cloudLoginDesc,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    val activity = context.findActivity()
+                                    if (activity == null) {
+                                        errorMessage = "Activity context unavailable."
+                                        return@Button
+                                    }
+                                    isSigningIn = true
+                                    errorMessage = null
+                                    scope.launch {
+                                        val result = onSignInRequest(activity)
+                                        isSigningIn = false
+                                        result.onFailure { err ->
+                                            if (err !is GetCredentialCancellationException) {
+                                                errorMessage = err.localizedMessage ?: "Sign-in failed."
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !isSigningIn,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                                    .testTag("google_sign_in_button"),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                if (isSigningIn) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(22.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.CloudSync,
+                                        contentDescription = strings.signInButton
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = strings.signInButton,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
                                 }
                             }
                         }
-                    },
-                    enabled = !isSigningIn,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .testTag("google_sign_in_button"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    if (isSigningIn) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.5.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = strings.signInButton
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = strings.signInButton,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
 
                 if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = errorMessage ?: "",
                         color = MaterialTheme.colorScheme.error,

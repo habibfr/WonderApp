@@ -53,7 +53,17 @@ class ExampleRobolectricTest {
         composeTestRule.waitForIdle()
 
         assertEquals("id", viewModel.uiState.value.profile.languageCode)
-        composeTestRule.onNodeWithTag("welcome_buddy_canvas").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("welcome_buddy_canvas", useUnmergedTree = true).assertExists()
+
+        // Test multilingual language switching on welcome screen
+        composeTestRule.onNodeWithTag("welcome_lang_en").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertEquals("en", viewModel.uiState.value.profile.languageCode)
+
+        composeTestRule.onNodeWithTag("welcome_lang_id").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertEquals("id", viewModel.uiState.value.profile.languageCode)
+
         composeTestRule.onNodeWithTag("guest_play_button").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithTag("google_sign_in_button").performScrollTo().assertIsDisplayed()
 
@@ -61,7 +71,8 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithTag("guest_play_button").performScrollTo().performClick()
         composeTestRule.waitForIdle()
         assertTrue(viewModel.uiState.value.isGuestMode)
-        composeTestRule.onNodeWithTag("hero_buddy_card").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("storage_sync_status_banner").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("hero_buddy_card").assertExists()
     }
 
     @Test

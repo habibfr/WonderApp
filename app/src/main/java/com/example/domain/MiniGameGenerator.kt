@@ -70,15 +70,15 @@ object MiniGameGenerator {
         level: Int,
         lang: String
     ): MiniGameQuestion {
-        val safariAnimals = listOf(
-            "🦁" to 0xFFFFB300L,
-            "🐘" to 0xFF26A69AL,
-            "🦒" to 0xFFFF7043L,
-            "🐼" to 0xFF7E57C2L,
-            "🦜" to 0xFFEC407AL,
-            "🐢" to 0xFF66BB6AL
+        val safariTokens = listOf(
+            "●" to 0xFFFFB300L,
+            "■" to 0xFF26A69AL,
+            "▲" to 0xFFFF7043L,
+            "★" to 0xFF7E57C2L,
+            "◆" to 0xFFEC407AL,
+            "✦" to 0xFF66BB6AL
         )
-        val (emoji, colorHex) = safariAnimals[(index + level) % safariAnimals.size]
+        val (tokenSymbol, colorHex) = safariTokens[(index + level) % safariTokens.size]
 
         return when (ageGroup) {
             AgeGroupConfig.AGES_4_6 -> {
@@ -89,16 +89,16 @@ object MiniGameGenerator {
                 MiniGameQuestion(
                     index = index,
                     total = total,
-                    prompt = localizedMathPrompt(lang, isAddition = true, emoji = emoji),
-                    visualEquationOrPattern = "$a $emoji  +  $b $emoji  =  ?",
-                    visualTokens = List(a) { emoji } + listOf("➕") + List(b) { emoji },
+                    prompt = localizedMathPrompt(lang, isAddition = true, symbol = tokenSymbol),
+                    visualEquationOrPattern = "$a $tokenSymbol  +  $b $tokenSymbol  =  ?",
+                    visualTokens = List(a) { tokenSymbol } + listOf("+") + List(b) { tokenSymbol },
                     options = options.map { it.toString() },
-                    optionIcons = options.map { count -> List(count.coerceAtMost(4)) { emoji }.joinToString("") },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(answer),
                     hintText = localizedHintCount(lang, a, b, answer),
                     sceneKind = VisualSceneKind.COUNTING_SAFARI,
-                    leftGroup = VisualCountGroup(emoji, a, "$a", colorHex),
-                    rightGroup = VisualCountGroup(emoji, b, "$b", colorHex),
+                    leftGroup = VisualCountGroup(tokenSymbol, a, "$a", colorHex),
+                    rightGroup = VisualCountGroup(tokenSymbol, b, "$b", colorHex),
                     operatorSymbol = "+"
                 )
             }
@@ -112,16 +112,16 @@ object MiniGameGenerator {
                 MiniGameQuestion(
                     index = index,
                     total = total,
-                    prompt = localizedMathPrompt(lang, isAddition = isAdd, emoji = emoji),
+                    prompt = localizedMathPrompt(lang, isAddition = isAdd, symbol = tokenSymbol),
                     visualEquationOrPattern = "$a  $op  $b  =  ?",
-                    visualTokens = List(a.coerceAtMost(6)) { emoji } + listOf(op) + List(b.coerceAtMost(5)) { emoji },
+                    visualTokens = List(a.coerceAtMost(6)) { tokenSymbol } + listOf(op) + List(b.coerceAtMost(5)) { tokenSymbol },
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { emoji },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(answer),
                     hintText = localizedHintStartFrom(lang, a, b, isAdd, answer),
                     sceneKind = VisualSceneKind.COUNTING_SAFARI,
-                    leftGroup = VisualCountGroup(emoji, a.coerceAtMost(8), "$a", colorHex),
-                    rightGroup = VisualCountGroup(emoji, b.coerceAtMost(8), "$b", colorHex),
+                    leftGroup = VisualCountGroup(tokenSymbol, a.coerceAtMost(8), "$a", colorHex),
+                    rightGroup = VisualCountGroup(tokenSymbol, b.coerceAtMost(8), "$b", colorHex),
                     operatorSymbol = op
                 )
             }
@@ -136,14 +136,14 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedOrderOfOpsPrompt(lang),
                     visualEquationOrPattern = "($a × $b) + $c = ?",
-                    visualTokens = listOf("$a × $b", "➕", "$c", "🟰", "❓"),
+                    visualTokens = listOf("$a × $b", "+", "$c", "=", "?"),
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { "⚡" },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(answer),
                     hintText = "$a × $b = ${a * b}, + $c = $answer",
                     sceneKind = VisualSceneKind.COUNTING_SAFARI,
-                    leftGroup = VisualCountGroup(emoji, a.coerceAtMost(7), "$a×$b", colorHex),
-                    rightGroup = VisualCountGroup("⭐", c.coerceAtMost(6), "+$c", 0xFFFFB300L),
+                    leftGroup = VisualCountGroup(tokenSymbol, a.coerceAtMost(7), "$a×$b", colorHex),
+                    rightGroup = VisualCountGroup("★", c.coerceAtMost(6), "+$c", 0xFFFFB300L),
                     operatorSymbol = "×+"
                 )
             }
@@ -158,21 +158,21 @@ object MiniGameGenerator {
         lang: String
     ): MiniGameQuestion {
         val patternSets = listOf(
-            listOf("🌞", "🌙", "⭐"),
-            listOf("🍎", "🍌", "🍇"),
-            listOf("🔺", "🔷", "🟢"),
-            listOf("🦊", "🐼", "🦁"),
-            listOf("🚀", "🪐", "☄️"),
-            listOf("🌺", "🦋", "🌈")
+            listOf("▲", "■", "●"),
+            listOf("★", "◆", "✦"),
+            listOf("1", "2", "3"),
+            listOf("A", "B", "C"),
+            listOf("●", "▲", "★"),
+            listOf("◆", "■", "✦")
         )
         val set = patternSets[(index + level) % patternSets.size]
         return when (ageGroup) {
             AgeGroupConfig.AGES_4_6 -> {
                 val a = set[0]
                 val b = set[1]
-                val sequence = listOf(a, b, a, b, a, "❓")
+                val sequence = listOf(a, b, a, b, a, "?")
                 val correct = b
-                val options = listOf(a, b, set[2], "🎈").distinct()
+                val options = listOf(a, b, set[2], "▼").distinct()
                 MiniGameQuestion(
                     index = index,
                     total = total,
@@ -180,7 +180,7 @@ object MiniGameGenerator {
                     visualEquationOrPattern = sequence.joinToString("  →  "),
                     visualTokens = sequence,
                     options = options,
-                    optionIcons = options,
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(correct),
                     hintText = "$a, $b, $a, $b ... → $correct",
                     sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
@@ -190,9 +190,9 @@ object MiniGameGenerator {
                 val a = set[0]
                 val b = set[1]
                 val c = set[2]
-                val sequence = listOf(a, b, c, a, b, "❓")
+                val sequence = listOf(a, b, c, a, b, "?")
                 val correct = c
-                val options = listOf(c, a, b, "💎")
+                val options = listOf(c, a, b, "●")
                 MiniGameQuestion(
                     index = index,
                     total = total,
@@ -200,7 +200,7 @@ object MiniGameGenerator {
                     visualEquationOrPattern = sequence.joinToString("  •  "),
                     visualTokens = sequence,
                     options = options,
-                    optionIcons = options,
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(correct),
                     hintText = "$a → $b → $c",
                     sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
@@ -217,9 +217,9 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedPatternPrompt(lang),
                     visualEquationOrPattern = "${seqNums.joinToString(" , ")} , ?",
-                    visualTokens = seqNums.map { it.toString() } + listOf("❓"),
+                    visualTokens = seqNums.map { it.toString() } + listOf("?"),
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { "🔮" },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(answer),
                     hintText = "+$step → ${seqNums.last()} + $step = $answer",
                     sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
@@ -251,17 +251,17 @@ object MiniGameGenerator {
         val missingPos = 2
         val answer = stones[missingPos]
         val displayStones = stones.mapIndexed { idx, value ->
-            if (idx == missingPos) "❓" else value.toString()
+            if (idx == missingPos) "?" else value.toString()
         }
         val options = makeNumericOptions(answer, minVal = 1)
         return MiniGameQuestion(
             index = index,
             total = total,
             prompt = localizedBridgePrompt(lang, step),
-            visualEquationOrPattern = displayStones.joinToString("  🌉  "),
+            visualEquationOrPattern = displayStones.joinToString("  ──  "),
             visualTokens = displayStones,
             options = options.map { it.toString() },
-            optionIcons = List(options.size) { "🪨" },
+            optionIcons = emptyList(),
             correctIndex = options.indexOf(answer),
             hintText = "${stones[1]} + $step = $answer",
             sceneKind = VisualSceneKind.STEPPING_BRIDGE
@@ -278,11 +278,11 @@ object MiniGameGenerator {
         return when (ageGroup) {
             AgeGroupConfig.AGES_4_6 -> {
                 val pairs = listOf(
-                    Triple("🐶", "🦴", listOf("🦴", "🚗", "🎩", "⏰")),
-                    Triple("🐝", "🌻", listOf("🌻", "🥾", "🛋️", "📎")),
-                    Triple("🐟", "🌊", listOf("🌊", "🔥", "🌵", "🚲")),
-                    Triple("🐦", "🪺", listOf("🪺", "🛹", "🧊", "🎸")),
-                    Triple("🐒", "🍌", listOf("🍌", "🛷", "🔦", "🧱"))
+                    Triple("Kucing", "Ikan", listOf("Ikan", "Mobil", "Topi", "Jam")),
+                    Triple("Lebah", "Madu", listOf("Madu", "Sepatu", "Sofa", "Klip")),
+                    Triple("Burung", "Sarang", listOf("Sarang", "Papan", "Es", "Gitar")),
+                    Triple("Monyet", "Pisang", listOf("Pisang", "Senter", "Bata", "Roda")),
+                    Triple("Kelinci", "Wortel", listOf("Wortel", "Buku", "Kacamata", "Sendok"))
                 )
                 val chosen = pairs[(index + level) % pairs.size]
                 val shuffled = chosen.third.shuffled(java.util.Random((index * 31 + level).toLong()))
@@ -290,30 +290,30 @@ object MiniGameGenerator {
                     index = index,
                     total = total,
                     prompt = localizedLogicPairPrompt(lang, chosen.first),
-                    visualEquationOrPattern = "${chosen.first}  ➔  ❓",
-                    visualTokens = listOf(chosen.first, "✨", "❓"),
+                    visualEquationOrPattern = "${chosen.first}  ➔  ?",
+                    visualTokens = listOf(chosen.first, "➔", "?"),
                     options = shuffled,
-                    optionIcons = shuffled,
+                    optionIcons = emptyList(),
                     correctIndex = shuffled.indexOf(chosen.second),
-                    hintText = "${chosen.first} ❤️ ${chosen.second}",
+                    hintText = "${chosen.first} + ${chosen.second}",
                     sceneKind = VisualSceneKind.MATRIX_GRID
                 )
             }
             AgeGroupConfig.AGES_7_9 -> {
-                val shapes = listOf("🔴", "🟦", "🔺")
+                val shapes = listOf("●", "■", "▲")
                 val target = shapes[(index + level) % shapes.size]
                 val others = shapes.filter { it != target }
-                val options = listOf(target, others[0], others[1], "⬛")
+                val options = listOf(target, others[0], others[1], "◆")
                 MiniGameQuestion(
                     index = index,
                     total = total,
                     prompt = localizedMatrixRowPrompt(lang),
-                    visualEquationOrPattern = "${others[0]}   ${others[1]}   ❓",
-                    visualTokens = listOf(others[0], others[1], "❓"),
+                    visualEquationOrPattern = "${others[0]}   ${others[1]}   ?",
+                    visualTokens = listOf(others[0], others[1], "?"),
                     options = options,
-                    optionIcons = options,
+                    optionIcons = emptyList(),
                     correctIndex = 0,
-                    hintText = "🔴 + 🟦 + 🔺 → $target",
+                    hintText = "● + ■ + ▲ = $target",
                     sceneKind = VisualSceneKind.MATRIX_GRID
                 )
             }
@@ -330,9 +330,9 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedMatrixGridPrompt(lang),
                     visualEquationOrPattern = "[ $topA ➔ $topB ]   •   [ $botA ➔ ? ]",
-                    visualTokens = listOf("$topA ➔ $topB", "×$mult", "$botA ➔ ❓"),
+                    visualTokens = listOf("$topA ➔ $topB", "×$mult", "$botA ➔ ?"),
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { "🧩" },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(answer),
                     hintText = "× $mult: $botA × $mult = $answer",
                     sceneKind = VisualSceneKind.MATRIX_GRID
@@ -349,11 +349,11 @@ object MiniGameGenerator {
         lang: String
     ): MiniGameQuestion {
         val shapesData = listOf(
-            Triple(3, "🔺", mapOf("id" to "Segitiga", "en" to "Triangle", "es" to "Triángulo", "fr" to "Triangle", "hi" to "त्रिभुज")),
-            Triple(4, "🟦", mapOf("id" to "Persegi", "en" to "Square", "es" to "Cuadrado", "fr" to "Carré", "hi" to "वर्ग")),
+            Triple(3, "▲", mapOf("id" to "Segitiga", "en" to "Triangle", "es" to "Triángulo", "fr" to "Triangle", "hi" to "त्रिभुज")),
+            Triple(4, "■", mapOf("id" to "Persegi", "en" to "Square", "es" to "Cuadrado", "fr" to "Carré", "hi" to "वर्ग")),
             Triple(5, "⬠", mapOf("id" to "Segi Lima", "en" to "Pentagon", "es" to "Pentágono", "fr" to "Pentagone", "hi" to "पंचभुज")),
             Triple(6, "⬡", mapOf("id" to "Segi Enam", "en" to "Hexagon", "es" to "Hexágono", "fr" to "Hexagone", "hi" to "षट्भुज")),
-            Triple(8, "🛑", mapOf("id" to "Segi Delapan", "en" to "Octagon", "es" to "Octágono", "fr" to "Octogone", "hi" to "अष्टभुज"))
+            Triple(8, "✦", mapOf("id" to "Segi Delapan", "en" to "Octagon", "es" to "Octágono", "fr" to "Octogone", "hi" to "अष्टभुज"))
         )
         val picked = shapesData[(index + level) % shapesData.size]
         val sides = picked.first
@@ -369,9 +369,9 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedShapePrompt(lang, shapeName),
                     visualEquationOrPattern = "$shapeEmoji  $shapeName  =  ? Sisi / Sudut",
-                    visualTokens = List(sides.coerceAtMost(6)) { "✨" } + listOf(shapeEmoji),
+                    visualTokens = List(sides.coerceAtMost(6)) { "✦" } + listOf(shapeEmoji),
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { "📐" },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(sides),
                     hintText = localizedShapeHint(lang, shapeName, sides),
                     sceneKind = VisualSceneKind.POLYGON_GALAXY,
@@ -387,9 +387,9 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedPerimeterPrompt(lang, shapeName, sides, sideLength),
                     visualEquationOrPattern = "$shapeName ($sides × $sideLength) = ?",
-                    visualTokens = listOf(shapeEmoji, "$sides sisi", "× $sideLength", "🟰 ❓"),
+                    visualTokens = listOf(shapeEmoji, "$sides sisi", "× $sideLength", "= ?"),
                     options = options.map { it.toString() },
-                    optionIcons = List(options.size) { "🪐" },
+                    optionIcons = emptyList(),
                     correctIndex = options.indexOf(perimeter),
                     hintText = "$sides × $sideLength = $perimeter",
                     sceneKind = VisualSceneKind.POLYGON_GALAXY,
@@ -407,11 +407,11 @@ object MiniGameGenerator {
         lang: String
     ): MiniGameQuestion {
         val treasureSets = listOf(
-            listOf("👑", "💎", "🏆", "🗝️"),
-            listOf("🐬", "🐙", "🦀", "🐳"),
-            listOf("🍓", "🍍", "🍉", "🍒"),
-            listOf("🚀", "🛸", "🛰️", "🌠"),
-            listOf("🦖", "🦕", "🐉", "🐢")
+            listOf("★", "◆", "●", "▲"),
+            listOf("A", "B", "C", "D"),
+            listOf("1", "2", "3", "4"),
+            listOf("✦", "■", "▼", "✚"),
+            listOf("Alpha", "Beta", "Gamma", "Delta")
         )
         val set = treasureSets[(index + level) % treasureSets.size]
         val cardCount = when (ageGroup) {
@@ -423,7 +423,7 @@ object MiniGameGenerator {
         val hiddenPos = (index + level) % cards.size
         val correctGem = cards[hiddenPos]
         val displayTokens = cards.mapIndexed { idx, item ->
-            if (idx == hiddenPos) "📦❓" else item
+            if (idx == hiddenPos) "[ ? ]" else item
         }
         return MiniGameQuestion(
             index = index,
@@ -432,7 +432,7 @@ object MiniGameGenerator {
             visualEquationOrPattern = displayTokens.joinToString("   "),
             visualTokens = cards,
             options = set,
-            optionIcons = set,
+            optionIcons = emptyList(),
             correctIndex = set.indexOf(correctGem),
             hintText = "${cards.joinToString(" • ")} → $correctGem",
             sceneKind = VisualSceneKind.MEMORY_CHEST,
@@ -463,10 +463,10 @@ object MiniGameGenerator {
             index = index,
             total = total,
             prompt = localizedBalancePrompt(lang, leftTotal, rightKnown),
-            visualEquationOrPattern = "⚖️ [ $leftTotal ⭐ ]  =  [ $rightKnown ⭐ + ❓ ]",
-            visualTokens = listOf("⚖️ $leftTotal", "🟰", "$rightKnown + ❓"),
+            visualEquationOrPattern = "[ $leftTotal ★ ]  =  [ $rightKnown ★ + ? ]",
+            visualTokens = listOf("$leftTotal", "=", "$rightKnown + ?"),
             options = options.map { it.toString() },
-            optionIcons = options.map { "⭐×$it" },
+            optionIcons = emptyList(),
             correctIndex = options.indexOf(missingWeight),
             hintText = "$leftTotal − $rightKnown = $missingWeight",
             sceneKind = VisualSceneKind.BALANCE_BEAM,
@@ -490,12 +490,12 @@ object MiniGameGenerator {
         return candidates.toList().sorted()
     }
 
-    private fun localizedMathPrompt(lang: String, isAddition: Boolean, emoji: String): String = when (lang) {
-        "en" -> if (isAddition) "Count & tap the $emoji friends! How many altogether?" else "How many $emoji are left on the island?"
-        "es" -> if (isAddition) "¡Cuenta y toca los $emoji! ¿Cuántos hay en total?" else "¿Cuántos $emoji quedan en la isla?"
-        "fr" -> if (isAddition) "Compte et touche les $emoji ! Combien au total ?" else "Combien de $emoji restent sur l'île ?"
-        "hi" -> if (isAddition) "$emoji को टैप करके गिनें! कुल कितने हैं?" else "द्वीप पर कितने $emoji बचे हैं?"
-        else -> if (isAddition) "Ketuk & hitung $emoji di bawah! Berapa jumlah semuanya?" else "Berapa sisa $emoji yang ada di pulau?"
+    private fun localizedMathPrompt(lang: String, isAddition: Boolean, symbol: String): String = when (lang) {
+        "en" -> if (isAddition) "Count & tap the $symbol tokens! How many altogether?" else "How many $symbol tokens remain?"
+        "es" -> if (isAddition) "¡Cuenta y toca los símbolos $symbol! ¿Cuántos hay en total?" else "¿Cuántos $symbol quedan?"
+        "fr" -> if (isAddition) "Compte et touche les symboles $symbol ! Combien au total ?" else "Combien de $symbol restent ?"
+        "hi" -> if (isAddition) "$symbol को गिनें! कुल कितने हैं?" else "कितने $symbol बचे हैं?"
+        else -> if (isAddition) "Ketuk & hitung simbol $symbol di bawah! Berapa jumlah semuanya?" else "Berapa sisa simbol $symbol di pulau?"
     }
 
     private fun localizedOrderOfOpsPrompt(lang: String): String = when (lang) {
@@ -547,11 +547,11 @@ object MiniGameGenerator {
     }
 
     private fun localizedMatrixRowPrompt(lang: String): String = when (lang) {
-        "en" -> "Every row needs 🔴, 🟦, and 🔺. Which shape is missing?"
-        "es" -> "Cada fila necesita 🔴, 🟦 y 🔺. ¿Cuál falta?"
-        "fr" -> "Chaque ligne a 🔴, 🟦 et 🔺. Laquelle manque ?"
-        "hi" -> "हर पंक्ति में 🔴, 🟦 और 🔺 हैं। कौन सा गायब है?"
-        else -> "Setiap baris memiliki 🔴, 🟦, dan 🔺. Bentuk mana yang belum ada?"
+        "en" -> "Every row needs ●, ■, and ▲. Which shape is missing?"
+        "es" -> "Cada fila necesita ●, ■ y ▲. ¿Cuál falta?"
+        "fr" -> "Chaque ligne a ●, ■ et ▲. Laquelle manque ?"
+        "hi" -> "हर पंक्ति में ●, ■ और ▲ हैं। कौन सा गायब है?"
+        else -> "Setiap baris memiliki ●, ■, dan ▲. Bentuk mana yang belum ada?"
     }
 
     private fun localizedMatrixGridPrompt(lang: String): String = when (lang) {
@@ -595,10 +595,10 @@ object MiniGameGenerator {
     }
 
     private fun localizedBalancePrompt(lang: String, leftTotal: Int, rightKnown: Int): String = when (lang) {
-        "en" -> "Balance the Cosmic Scale! Left has $leftTotal ⭐, Right has $rightKnown ⭐. How many more ⭐ needed?"
-        "es" -> "¡Equilibra la balanza! Izquierda: $leftTotal ⭐, Derecha: $rightKnown ⭐. ¿Cuántas faltan?"
-        "fr" -> "Équilibre la balance ! Gauche : $leftTotal ⭐, Droite : $rightKnown ⭐. Combien manque-t-il ?"
-        "hi" -> "तराजू संतुलित करें! बाएं $leftTotal ⭐, दाएं $rightKnown ⭐ हैं। और कितने चाहिए?"
-        else -> "Seimbangkan Timbangan Kosmik! Kiri = $leftTotal ⭐, Kanan = $rightKnown ⭐. Berapa ⭐ lagi agar seimbang?"
+        "en" -> "Balance the Cosmic Scale! Left has $leftTotal, Right has $rightKnown. How many more needed to balance?"
+        "es" -> "¡Equilibra la balanza! Izquierda: $leftTotal, Derecha: $rightKnown. ¿Cuánto falta?"
+        "fr" -> "Équilibre la balance ! Gauche : $leftTotal, Droite : $rightKnown. Combien manque-t-il ?"
+        "hi" -> "तराजू संतुलित करें! बाएं $leftTotal, दाएं $rightKnown हैं। और कितने चाहिए?"
+        else -> "Seimbangkan Timbangan Kosmik! Kiri = $leftTotal, Kanan = $rightKnown. Berapa beban lagi agar seimbang?"
     }
 }

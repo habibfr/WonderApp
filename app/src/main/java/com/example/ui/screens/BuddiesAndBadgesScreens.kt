@@ -44,6 +44,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import com.example.ui.components.BuddyMiniAvatar
+import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -135,11 +137,21 @@ fun BuddiesRoomScreen(
                             .testTag("active_buddy_stage_canvas")
                     )
 
-                    Text(
-                        text = "${activeBuddy.emoji} ${activeBuddy.localizedName(languageCode)} — ${activeBuddy.localizedTitle(languageCode)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        BuddyMiniAvatar(
+                            character = activeBuddy,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${activeBuddy.localizedName(languageCode)} — ${activeBuddy.localizedTitle(languageCode)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
 
                     // Interactive Happiness, Energy & Treats Stats
                     Row(
@@ -204,7 +216,12 @@ fun BuddiesRoomScreen(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "🍓", fontSize = 16.sp)
+                                Icon(
+                                    imageVector = Icons.Default.Restaurant,
+                                    contentDescription = null,
+                                    tint = Color(0xFFE91E63),
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "×$treatsFedCount",
@@ -251,13 +268,15 @@ fun BuddiesRoomScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Restaurant, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("🍓 ${strings.feedTreatButton}", fontWeight = FontWeight.Bold)
+                            Text(strings.feedTreatButton, fontWeight = FontWeight.Bold)
                         }
                         FilledTonalButton(
                             onClick = { onTriggerReaction(BuddyReaction.MAGIC_WAND) },
                             modifier = Modifier.testTag("reaction_magic_wand_button")
                         ) {
-                            Text("🪄 ${strings.magicWandButton}", fontWeight = FontWeight.Bold)
+                            Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.magicWandButton, fontWeight = FontWeight.Bold)
                         }
                         FilledTonalButton(
                             onClick = { onTriggerReaction(BuddyReaction.SLEEPY) },
@@ -296,7 +315,7 @@ fun BuddiesRoomScreen(
                         modifier = Modifier.size(96.dp)
                     )
                     Text(
-                        text = "${buddy.emoji} ${buddy.localizedName(languageCode)}",
+                        text = buddy.localizedName(languageCode),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -392,13 +411,24 @@ fun BadgesTrophiesScreen(
                             shape = RoundedCornerShape(50),
                             color = MaterialTheme.colorScheme.primary
                         ) {
-                            Text(
-                                text = "🏆 $unlockedCount / $totalBadges",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$unlockedCount / $totalBadges",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
                         }
                     }
 
@@ -487,7 +517,11 @@ private fun BadgeItemCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (unlocked) {
-                        Text(text = badge.emoji, fontSize = 34.sp)
+                        WonderQuestIcon(
+                            iconKey = badge.iconKey,
+                            tint = accent,
+                            modifier = Modifier.size(34.dp)
+                        )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Lock,
@@ -519,7 +553,7 @@ private fun BadgeItemCard(
                 color = if (unlocked) accent.copy(alpha = 0.20f) else MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Text(
-                    text = if (unlocked) "✨ $unlockedLabel" else lockedLabel,
+                    text = if (unlocked) unlockedLabel else lockedLabel,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (unlocked) accent else MaterialTheme.colorScheme.onSurfaceVariant,

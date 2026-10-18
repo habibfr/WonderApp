@@ -12,12 +12,20 @@ import kotlinx.coroutines.tasks.await
 class WonderQuestRepository(
     customDb: FirebaseFirestore? = null
 ) {
-    private val db: FirebaseFirestore by lazy { customDb ?: FirebaseFirestore.getInstance() }
-    private val profilesCollection by lazy { db.collection("child_profiles") }
-    private val sessionsCollection by lazy { db.collection("game_sessions") }
+    private val db: FirebaseFirestore? by lazy {
+        customDb ?: runCatching { FirebaseFirestore.getInstance() }.getOrNull()
+    }
+    private val profilesCollection by lazy { db?.collection("child_profiles") }
+    private val sessionsCollection by lazy { db?.collection("game_sessions") }
 
     fun observeChildProfile(uid: String): Flow<ChildProfile?> = callbackFlow {
-        val registration: ListenerRegistration = profilesCollection.document(uid)
+        val col = profilesCollection
+        if (col == null) {
+            trySend(null)
+            awaitClose { }
+            return@callbackFlow
+        }
+        val registration: ListenerRegistration = col.document(uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     FirestoreErrorHandler.handleError(error, OperationType.GET, "child_profiles/$uid")
@@ -31,7 +39,13 @@ class WonderQuestRepository(
     }
 
     fun observeRecentSessions(uid: String, limitCount: Long = 15L): Flow<List<GameSessionRecord>> = callbackFlow {
-        val registration: ListenerRegistration = sessionsCollection
+        val col = sessionsCollection
+        if (col == null) {
+            trySend(emptyList())
+            awaitClose { }
+            return@callbackFlow
+        }
+        val registration: ListenerRegistration = col
             .whereEqualTo("userId", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(limitCount)
@@ -50,29 +64,30 @@ class WonderQuestRepository(
     }
 
     suspend fun ensureChildProfile(uid: String, defaultName: String = "Penjelajah Kecil"): ChildProfile {
-        val docRef = profilesCollection.document(uid)
+        val initial = ChildProfile(
+            id = uid,
+            userId = uid,
+            childName = defaultName.trim().take(40).ifEmpty { "Penjelajah Kecil" },
+            ageGroup = "7-9",
+            selectedCharacter = "sparky",
+            languageCode = "id",
+            darkMode = false,
+            parentPin = "1234",
+            totalStars = 0L,
+            completedLevelsCount = 0L,
+            mathScore = 0L,
+            logicScore = 0L,
+            streakDays = 1L,
+            unlockedBadges = listOf("curious_buddy")
+        )
+        val col = profilesCollection ?: return initial
+        val docRef = col.document(uid)
         return try {
             val snapshot = docRef.get().await()
             val existing = snapshot.toObject(ChildProfile::class.java)
             if (existing != null) {
                 existing
             } else {
-                val initial = ChildProfile(
-                    id = uid,
-                    userId = uid,
-                    childName = defaultName.trim().take(40).ifEmpty { "Penjelajah Kecil" },
-                    ageGroup = "7-9",
-                    selectedCharacter = "sparky",
-                    languageCode = "id",
-                    darkMode = false,
-                    parentPin = "1234",
-                    totalStars = 0L,
-                    completedLevelsCount = 0L,
-                    mathScore = 0L,
-                    logicScore = 0L,
-                    streakDays = 1L,
-                    unlockedBadges = listOf("curious_buddy")
-                )
                 docRef.set(initial.toCreatePayload(uid)).await()
                 initial
             }
@@ -92,7 +107,8 @@ class WonderQuestRepository(
         localSessions: List<GameSessionRecord>,
         localStorage: LocalDeviceStorage
     ): ChildProfile {
-        val docRef = profilesCollection.document(uid)
+        val col = profilesCollection ?: return localProfile.copy(id = uid, userId = uid)
+        val docRef = col.document(uid)
         return try {
             val snapshot = docRef.get().await()
             val existingCloud = snapshot.toObject(ChildProfile::class.java)
@@ -126,9 +142,12 @@ class WonderQuestRepository(
             }
 
             if (localStorage.hasPendingCloudSync() && localSessions.isNotEmpty()) {
-                for (session in localSessions.take(5)) {
-                    val sessionRef = sessionsCollection.document()
-                    sessionRef.set(session.toCreatePayload(uid)).await()
+                val sessCol = sessionsCollection
+                if (sessCol != null) {
+                    for (session in localSessions.take(5)) {
+                        val sessionRef = sessCol.document()
+                        sessionRef.set(session.toCreatePayload(uid)).await()
+                    }
                 }
             }
             localStorage.setPendingCloudSync(false)
@@ -148,7 +167,8 @@ class WonderQuestRepository(
         darkMode: Boolean? = null,
         parentPin: String? = null
     ) {
-        val docRef = profilesCollection.document(uid)
+        val col = profilesCollection ?: return
+        val docRef = col.document(uid)
         val updates = mutableMapOf<String, Any>(
             "updatedAt" to FieldValue.serverTimestamp()
         )
@@ -207,7 +227,13 @@ class WonderQuestRepository(
         val newlyUnlocked = badges.filter { it !in currentProfile.unlockedBadges }
         val finalBadges = badges.toList().take(20)
 
-        val sessionDoc = sessionsCollection.document()
+        val sessCol = sessionsCollection
+        val profCol = profilesCollection
+        if (sessCol == null || profCol == null) {
+            return newlyUnlocked
+        }
+
+        val sessionDoc = sessCol.document()
         try {
             sessionDoc.set(session.toCreatePayload(uid)).await()
         } catch (e: Exception) {
@@ -215,7 +241,7 @@ class WonderQuestRepository(
             throw e
         }
 
-        val profileDoc = profilesCollection.document(uid)
+        val profileDoc = profCol.document(uid)
         val updates = mapOf(
             "totalStars" to newStars,
             "completedLevelsCount" to newLevels,
@@ -235,7 +261,8 @@ class WonderQuestRepository(
     }
 
     suspend fun resetProgress(uid: String) {
-        val profileDoc = profilesCollection.document(uid)
+        val col = profilesCollection ?: return
+        val profileDoc = col.document(uid)
         val updates = mapOf(
             "totalStars" to 0L,
             "completedLevelsCount" to 0L,
@@ -254,8 +281,9 @@ class WonderQuestRepository(
     }
 
     suspend fun deleteSession(sessionId: String) {
+        val col = sessionsCollection ?: return
         try {
-            sessionsCollection.document(sessionId).delete().await()
+            col.document(sessionId).delete().await()
         } catch (e: Exception) {
             FirestoreErrorHandler.handleError(e, OperationType.DELETE, "game_sessions/$sessionId")
             throw e
