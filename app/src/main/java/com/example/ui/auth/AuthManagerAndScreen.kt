@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VerifiedUser
 import com.example.ui.components.BuddyMiniAvatar
+import com.example.ui.components.WonderIslandIllustratedBanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -298,27 +299,35 @@ fun WonderQuestSignInScreen(
                         }
                     }
 
-                    // Mascot Canvas with float animation
-                    Box(
+                    // Mascot Canvas on Colorful Illustrated Wonder Island Stage
+                    WonderIslandIllustratedBanner(
                         modifier = Modifier
-                            .offset(y = floatOffset.dp)
-                            .clickable {
-                                mascotReaction = when (mascotReaction) {
-                                    BuddyReaction.DANCING -> BuddyReaction.SPARKLE
-                                    BuddyReaction.SPARKLE -> BuddyReaction.EATING_TREAT
-                                    BuddyReaction.EATING_TREAT -> BuddyReaction.HIGH_FIVE
-                                    else -> BuddyReaction.DANCING
-                                }
-                            },
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(172.dp)
+                            .clip(RoundedCornerShape(24.dp))
                     ) {
-                        AnimatedBuddyCanvas(
-                            character = selectedMascot,
-                            reaction = mascotReaction,
+                        Box(
                             modifier = Modifier
-                                .size(148.dp)
-                                .testTag("welcome_buddy_canvas")
-                        )
+                                .fillMaxSize()
+                                .offset(y = floatOffset.dp)
+                                .clickable {
+                                    mascotReaction = when (mascotReaction) {
+                                        BuddyReaction.DANCING -> BuddyReaction.SPARKLE
+                                        BuddyReaction.SPARKLE -> BuddyReaction.EATING_TREAT
+                                        BuddyReaction.EATING_TREAT -> BuddyReaction.HIGH_FIVE
+                                        else -> BuddyReaction.DANCING
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AnimatedBuddyCanvas(
+                                character = selectedMascot,
+                                reaction = mascotReaction,
+                                modifier = Modifier
+                                    .size(144.dp)
+                                    .testTag("welcome_buddy_canvas")
+                            )
+                        }
                     }
 
                     // Quick Character Switcher Row

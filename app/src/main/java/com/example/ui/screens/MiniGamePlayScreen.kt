@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TouchApp
+import com.example.ui.components.ColorfulVisualTokenSymbol
 import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -222,7 +223,7 @@ fun MiniGamePlayScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "⏱️ ${remSec}s",
+                            text = "${remSec}s",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFFE64A19)

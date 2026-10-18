@@ -1,0 +1,96 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="800dp"
+    android:height="360dp"
+    android:viewportWidth="800"
+    android:viewportHeight="360">
+
+    <!-- Sky Gradient -->
+    <path android:pathData="M0,0h800v360h-800z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="400"
+                android:startY="0"
+                android:endX="400"
+                android:endY="360"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF1E1B4B" />
+                <item android:offset="0.45" android:color="#FF4338CA" />
+                <item android:offset="0.80" android:color="#FF06B6D4" />
+                <item android:offset="1.0" android:color="#FF34D399" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Glowing Sun / Golden Portal Orb -->
+    <path
+        android:pathData="M650,95m-75,0a75,75 0,1 1,150 0a75,75 0,1 1,-150 0"
+        android:fillColor="#33FBBF24" />
+    <path
+        android:pathData="M650,95m-48,0a48,48 0,1 1,96 0a48,48 0,1 1,-96 0"
+        android:fillColor="#FFFDE047" />
+
+    <!-- Rainbow Bridge Arc -->
+    <path
+        android:pathData="M110,290 Q400,60 690,290"
+        android:strokeWidth="16"
+        android:strokeColor="#88FF6B6B"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M122,296 Q400,76 678,296"
+        android:strokeWidth="14"
+        android:strokeColor="#88FFD93D"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M134,302 Q400,92 666,302"
+        android:strokeWidth="12"
+        android:strokeColor="#884D96FF"
+        android:fillColor="#00000000" />
+
+    <!-- Left Floating Crystal Island -->
+    <path
+        android:pathData="M70,190 Q155,155 240,190 L210,255 Q155,285 100,255 Z"
+        android:fillColor="#FF7C3AED" />
+    <path
+        android:pathData="M55,185 Q155,145 255,185 Q155,215 55,185 Z"
+        android:fillColor="#FF10B981" />
+    <!-- Crystal Spire on Left Island -->
+    <path
+        android:pathData="M155,95 L180,175 L155,190 L130,175 Z"
+        android:fillColor="#FF38BDF8" />
+    <path
+        android:pathData="M155,95 L180,175 L155,190 Z"
+        android:fillColor="#FF7DD3FC" />
+
+    <!-- Center Grand Wonder Island -->
+    <path
+        android:pathData="M270,220 Q400,170 530,220 L485,320 Q400,350 315,320 Z"
+        android:fillColor="#FF9333EA" />
+    <path
+        android:pathData="M250,215 Q400,165 550,215 Q400,255 250,215 Z"
+        android:fillColor="#FF34D399" />
+
+    <!-- Golden Star Citadel on Center Island -->
+    <path
+        android:pathData="M370,120 L400,70 L430,120 L430,205 L370,205 Z"
+        android:fillColor="#FFF59E0B" />
+    <path
+        android:pathData="M400,70 L430,120 L430,205 L400,205 Z"
+        android:fillColor="#FFFBBF24" />
+    <path
+        android:pathData="M400,36 L408,54 L428,56 L413,69 L417,88 L400,78 L383,88 L387,69 L372,56 L392,54 Z"
+        android:fillColor="#FFFEF08A" />
+
+    <!-- Right Floating Logic Island -->
+    <path
+        android:pathData="M565,205 Q645,175 725,205 L695,265 Q645,290 595,265 Z"
+        android:fillColor="#FFDB2777" />
+    <path
+        android:pathData="M555,200 Q645,170 735,200 Q645,230 555,200 Z"
+        android:fillColor="#FFA3E635" />
+
+    <!-- Foreground Rolling Emerald Waves -->
+    <path
+        android:pathData="M0,310 Q200,270 400,310 T800,300 L800,360 L0,360 Z"
+        android:fillColor="#44059669" />
+</vector>

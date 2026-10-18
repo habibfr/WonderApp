@@ -15,7 +15,7 @@ enum class VisualSceneKind {
 }
 
 data class VisualCountGroup(
-    val emoji: String,
+    val symbol: String,
     val count: Int,
     val label: String,
     val accentHex: Long
@@ -357,7 +357,7 @@ object MiniGameGenerator {
         )
         val picked = shapesData[(index + level) % shapesData.size]
         val sides = picked.first
-        val shapeEmoji = picked.second
+        val shapeSymbol = picked.second
         val shapeName = picked.third[lang] ?: picked.third["id"]!!
 
         return when (ageGroup) {
@@ -368,8 +368,8 @@ object MiniGameGenerator {
                     index = index,
                     total = total,
                     prompt = localizedShapePrompt(lang, shapeName),
-                    visualEquationOrPattern = "$shapeEmoji  $shapeName  =  ? Sisi / Sudut",
-                    visualTokens = List(sides.coerceAtMost(6)) { "✦" } + listOf(shapeEmoji),
+                    visualEquationOrPattern = "$shapeSymbol  $shapeName  =  ? Sisi / Sudut",
+                    visualTokens = List(sides.coerceAtMost(6)) { "✦" } + listOf(shapeSymbol),
                     options = options.map { it.toString() },
                     optionIcons = emptyList(),
                     correctIndex = options.indexOf(sides),
@@ -387,7 +387,7 @@ object MiniGameGenerator {
                     total = total,
                     prompt = localizedPerimeterPrompt(lang, shapeName, sides, sideLength),
                     visualEquationOrPattern = "$shapeName ($sides × $sideLength) = ?",
-                    visualTokens = listOf(shapeEmoji, "$sides sisi", "× $sideLength", "= ?"),
+                    visualTokens = listOf(shapeSymbol, "$sides sisi", "× $sideLength", "= ?"),
                     options = options.map { it.toString() },
                     optionIcons = emptyList(),
                     correctIndex = options.indexOf(perimeter),

@@ -45,6 +45,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import com.example.ui.components.BuddyMiniAvatar
+import com.example.ui.components.TrophyVaultIllustratedBanner
 import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -382,17 +383,23 @@ fun BadgesTrophiesScreen(
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TrophyVaultIllustratedBanner(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(118.dp)
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.EmojiEvents,
@@ -446,6 +453,7 @@ fun BadgesTrophiesScreen(
                             .clip(RoundedCornerShape(50)),
                         color = Color(0xFFFFB300)
                     )
+                    }
                 }
             }
         }

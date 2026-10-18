@@ -1,0 +1,71 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="800dp"
+    android:height="320dp"
+    android:viewportWidth="800"
+    android:viewportHeight="320">
+
+    <!-- Royal Vault Background Gradient -->
+    <path android:pathData="M0,0h800v320h-800z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="800"
+                android:endY="320"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF311042" />
+                <item android:offset="0.5" android:color="#FF6D28D9" />
+                <item android:offset="1.0" android:color="#FFD97706" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Radiant Spotlight Beams -->
+    <path
+        android:pathData="M400,0 L210,320 L310,320 Z"
+        android:fillColor="#22FDE047" />
+    <path
+        android:pathData="M400,0 L490,320 L590,320 Z"
+        android:fillColor="#22FDE047" />
+    <path
+        android:pathData="M400,0 L350,320 L450,320 Z"
+        android:fillColor="#33FEF08A" />
+
+    <!-- Left Crystal Medal Pedestal -->
+    <path
+        android:pathData="M140,220 h110 v100 h-110 z"
+        android:fillColor="#FF4C1D95" />
+    <path
+        android:pathData="M130,208 h130 v18 h-130 z"
+        android:fillColor="#FFA78BFA" />
+    <path
+        android:pathData="M195,120 L230,160 L195,200 L160,160 Z"
+        android:fillColor="#FF38BDF8" />
+
+    <!-- Center Grand Champion Cup & Crown Pedestal -->
+    <path
+        android:pathData="M330,195 h140 v125 h-140 z"
+        android:fillColor="#FF78350F" />
+    <path
+        android:pathData="M315,180 h170 v22 h-170 z"
+        android:fillColor="#FFFBBF24" />
+    <!-- Crown Emblem -->
+    <path
+        android:pathData="M350,155 L340,95 L378,122 L400,82 L422,122 L460,95 L450,155 Z"
+        android:fillColor="#FFFDE047" />
+    <path
+        android:pathData="M400,66m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"
+        android:fillColor="#FFFB7185" />
+
+    <!-- Right Emerald Star Pedestal -->
+    <path
+        android:pathData="M550,220 h110 v100 h-110 z"
+        android:fillColor="#FF065F46" />
+    <path
+        android:pathData="M540,208 h130 v18 h-130 z"
+        android:fillColor="#FF34D399" />
+    <path
+        android:pathData="M605,118 L617,146 L647,149 L624,169 L631,198 L605,182 L579,198 L586,169 L563,149 L593,146 Z"
+        android:fillColor="#FFA7F3D0" />
+</vector>
