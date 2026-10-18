@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer soft glow circle -->
+    <path
+        android:fillColor="#33FBBF24"
+        android:pathData="M54,24 A30,30 0 1,1 53.9,24 Z" />
+    <!-- Bold Golden Star Mascot -->
+    <path
+        android:fillColor="#FFFBBF24"
+        android:strokeColor="#FFF59E0B"
+        android:strokeWidth="2"
+        android:pathData="M54,25 L61.5,40.2 L78.3,42.6 L66.1,54.5 L69,71.2 L54,63.3 L39,71.2 L41.9,54.5 L29.7,42.6 L46.5,40.2 Z" />
+    <!-- Cute happy eyes -->
+    <path
+        android:fillColor="#FF1E1B4B"
+        android:pathData="M46,48 A2.8,2.8 0 1,1 45.9,48 Z" />
+    <path
+        android:fillColor="#FF1E1B4B"
+        android:pathData="M62,48 A2.8,2.8 0 1,1 61.9,48 Z" />
+    <!-- Cute smile -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF1E1B4B"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M48,54 Q54,60 60,54" />
+    <!-- Playful Math Plus Badge -->
+    <path
+        android:fillColor="#FFEC4899"
+        android:pathData="M72,62 A10,10 0 1,1 71.9,62 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M70.5,67 H73.5 V77 H70.5 Z M67,70.5 H77 V73.5 H67 Z" />
+</vector>

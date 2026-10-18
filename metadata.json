@@ -1,0 +1,6 @@
+{
+  "name": "WonderQuest",
+  "description": "Interactive math and logic adventure game for kids ages 4-13 with animated buddies, badges, multilingual classroom support, dark mode, offline play, and parental progress dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

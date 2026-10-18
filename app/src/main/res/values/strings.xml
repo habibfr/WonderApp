@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">WonderQuest</string>
+    <string name="tagline">Interactive Math &amp; Logic Adventure Island</string>
+    <string name="nav_island">Island</string>
+    <string name="nav_buddies">Buddies</string>
+    <string name="nav_badges">Badges</string>
+    <string name="nav_parents">Parents</string>
+    <string name="sign_in_google">Sign in with Google</string>
+</resources>

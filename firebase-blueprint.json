@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "ChildProfile": {
+      "title": "ChildProfile",
+      "description": "Stores a child learner's profile, preferences, parental PIN, stars, scores, and unlocked badges.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user UID owning this profile."
+        },
+        "childName": {
+          "type": "string",
+          "description": "Display name of the child explorer (1-40 chars)."
+        },
+        "ageGroup": {
+          "type": "string",
+          "enum": ["4-6", "7-9", "10-13"],
+          "description": "Selected age bracket for adaptive difficulty."
+        },
+        "selectedCharacter": {
+          "type": "string",
+          "enum": ["sparky", "luna", "robobit", "sunny"],
+          "description": "Interactive buddy character ID."
+        },
+        "languageCode": {
+          "type": "string",
+          "enum": ["en", "es", "fr", "hi"],
+          "description": "Multilingual UI and classroom learning language code."
+        },
+        "darkMode": {
+          "type": "boolean",
+          "description": "Whether eye-friendly dark mode is active."
+        },
+        "parentPin": {
+          "type": "string",
+          "description": "4-digit PIN protecting the parental progress dashboard."
+        },
+        "totalStars": {
+          "type": "integer",
+          "description": "Cumulative stars earned across completed levels."
+        },
+        "completedLevelsCount": {
+          "type": "integer",
+          "description": "Total number of mini-game levels completed."
+        },
+        "mathScore": {
+          "type": "integer",
+          "description": "Cumulative math mastery points."
+        },
+        "logicScore": {
+          "type": "integer",
+          "description": "Cumulative logic and pattern mastery points."
+        },
+        "streakDays": {
+          "type": "integer",
+          "description": "Current learning streak in days."
+        },
+        "unlockedBadges": {
+          "type": "array",
+          "description": "List of unlocked badge IDs (max 20)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "childName",
+        "ageGroup",
+        "selectedCharacter",
+        "languageCode",
+        "darkMode",
+        "parentPin",
+        "totalStars",
+        "completedLevelsCount",
+        "mathScore",
+        "logicScore",
+        "streakDays",
+        "unlockedBadges",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GameSessionRecord": {
+      "title": "GameSessionRecord",
+      "description": "Stores an individual completed mini-game level session for parental progress tracking.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user UID owning this session record."
+        },
+        "gameType": {
+          "type": "string",
+          "enum": ["math_safari", "pattern_portal", "number_bridge", "logic_matrix"],
+          "description": "Identifier of the educational mini-game played."
+        },
+        "ageGroup": {
+          "type": "string",
+          "enum": ["4-6", "7-9", "10-13"],
+          "description": "Age difficulty bracket played during this session."
+        },
+        "levelNumber": {
+          "type": "integer",
+          "description": "Level number completed (1-50)."
+        },
+        "starsEarned": {
+          "type": "integer",
+          "description": "Stars earned in the session (1-3)."
+        },
+        "correctAnswers": {
+          "type": "integer",
+          "description": "Number of correct answers in the session."
+        },
+        "totalQuestions": {
+          "type": "integer",
+          "description": "Total number of questions in the session."
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "description": "Time spent completing the session in seconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session was recorded (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session was updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "gameType",
+        "ageGroup",
+        "levelNumber",
+        "starsEarned",
+        "correctAnswers",
+        "totalQuestions",
+        "durationSeconds",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/ChildProfile"
+      },
+      "description": "Per-user child learner profile and cumulative reward state."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": {
+        "$ref": "#/entities/GameSessionRecord"
+      },
+      "description": "Per-user completed educational mini-game sessions for parental analytics."
+    }
+  }
+}
