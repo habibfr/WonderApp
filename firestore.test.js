@@ -17,10 +17,10 @@ const emulatorPort = parseInt(emulatorPortStr, 10);
 function validProfilePayload(userId = ALICE_UID, now = new Date(Date.now() - 1000)) {
   return {
     userId,
-    childName: "Mia Explorer",
+    childName: "Budi Penjelajah",
     ageGroup: "7-9",
-    selectedCharacter: "sparky",
-    languageCode: "en",
+    selectedCharacter: "komodo",
+    languageCode: "id",
     darkMode: false,
     parentPin: "1234",
     totalStars: 12,
@@ -37,7 +37,7 @@ function validProfilePayload(userId = ALICE_UID, now = new Date(Date.now() - 100
 function validSessionPayload(userId = ALICE_UID, now = new Date(Date.now() - 1000)) {
   return {
     userId,
-    gameType: "math_safari",
+    gameType: "shape_galaxy",
     ageGroup: "7-9",
     levelNumber: 2,
     starsEarned: 3,
@@ -79,7 +79,7 @@ test("Unauthenticated user cannot read or create profiles", async () => {
   await assertFails(unauthDb.collection("users").doc(ALICE_UID).set(validProfilePayload(ALICE_UID)));
 });
 
-test("Authenticated user can create and read their own valid ChildProfile", async () => {
+test("Authenticated user can create and read their own valid ChildProfile with Indonesian default and Komodo buddy", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   await assertSucceeds(aliceDb.collection("users").doc(ALICE_UID).set(validProfilePayload(ALICE_UID)));
   await assertSucceeds(aliceDb.collection("users").doc(ALICE_UID).get());
@@ -116,7 +116,7 @@ test("Invalid parentPin or invalid ageGroup is rejected", async () => {
   await assertFails(aliceDb.collection("users").doc(ALICE_UID).set(badAgePayload));
 });
 
-test("Authenticated user can create and list their own GameSessionRecords with userId filter", async () => {
+test("Authenticated user can create and list their own GameSessionRecords for new mini-games", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const sessionRef = aliceDb.collection("users").doc(ALICE_UID).collection("sessions").doc("session_1");
   await assertSucceeds(sessionRef.set(validSessionPayload(ALICE_UID)));

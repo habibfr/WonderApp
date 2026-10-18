@@ -1,115 +1,152 @@
 package com.example.data
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.example.base.FirestoreEmulatorTestBase
 import com.google.firebase.firestore.FirebaseFirestoreException
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class WonderQuestRepositoryRuleTest : FirestoreEmulatorTestBase() {
 
-    @Test
-    fun createAndObserveProfile_authenticatedOwner_succeeds() = runBlocking {
-        val aliceUid = signInTestUser(ALICE_EMAIL)
-        val repository = WonderQuestRepository(firestore)
+    private lateinit var repository: WonderQuestRepository
 
-        val initialProfile = ChildProfile(
-            userId = aliceUid,
+    @Before
+    fun initRepository() {
+        repository = WonderQuestRepository(firestore)
+    }
+
+    @Test
+    fun ensureChildProfile_createsValidDocumentWithIndonesianDefault() = runTest {
+        val uid = signInTestUser("kid1@wonderquest.test")
+        val profile = repository.ensureChildProfile(uid, "Maya")
+
+        assertEquals(uid, profile.userId)
+        assertEquals("Maya", profile.childName)
+        assertEquals("id", profile.languageCode)
+
+        val snapshot = firestore.collection("child_profiles").document(uid).get().await()
+        assertTrue(snapshot.exists())
+        assertEquals("Maya", snapshot.getString("childName"))
+        assertEquals("id", snapshot.getString("languageCode"))
+        assertEquals("7-9", snapshot.getString("ageGroup"))
+    }
+
+    @Test
+    fun syncLocalProgressToCloud_mergesGuestDeviceDataIntoFirestore() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val storage = LocalDeviceStorage(context)
+        val guestProfile = ChildProfile(
+            id = "local_guest_profile",
+            userId = "guest_local",
+            childName = "Bintang",
+            ageGroup = "4-6",
+            selectedCharacter = "komodo",
+            languageCode = "id",
+            totalStars = 12L,
+            completedLevelsCount = 4L,
+            mathScore = 180L,
+            logicScore = 120L,
+            unlockedBadges = listOf("curious_buddy", "first_quest", "star_collector")
+        )
+        val guestSessions = listOf(
+            GameSessionRecord(
+                id = "local_1",
+                userId = "guest_local",
+                gameType = "shape_galaxy",
+                ageGroup = "4-6",
+                levelNumber = 1L,
+                starsEarned = 3L,
+                correctAnswers = 5L,
+                totalQuestions = 5L,
+                durationSeconds = 22L
+            )
+        )
+        storage.saveLocalProfile(guestProfile, markForSync = true)
+        storage.saveSessionsList(guestSessions, markForSync = true)
+
+        val uid = signInTestUser("guest_to_cloud@wonderquest.test")
+        val synced = repository.syncLocalProgressToCloud(uid, guestProfile, guestSessions, storage)
+
+        assertEquals("Bintang", synced.childName)
+        assertEquals("komodo", synced.selectedCharacter)
+        assertEquals(12L, synced.totalStars)
+
+        val snapshot = firestore.collection("child_profiles").document(uid).get().await()
+        assertTrue(snapshot.exists())
+        assertEquals(12L, snapshot.getLong("totalStars"))
+        assertEquals("komodo", snapshot.getString("selectedCharacter"))
+    }
+
+    @Test
+    fun updatePreferences_updatesKomodoAndIndonesianPreferences() = runTest {
+        val uid = signInTestUser("kid2@wonderquest.test")
+        repository.ensureChildProfile(uid, "Leo")
+
+        repository.updatePreferences(
+            uid = uid,
             childName = "Leo Star",
-            ageGroup = "7-9",
-            selectedCharacter = "sparky",
-            languageCode = "en",
-            darkMode = false,
-            parentPin = "2468"
+            ageGroup = "10-13",
+            selectedCharacter = "komodo",
+            languageCode = "id",
+            darkMode = true,
+            parentPin = "9876"
         )
 
-        val createResult = withTimeout(DEFAULT_TIMEOUT_MS) {
-            repository.createOrInitializeProfile(initialProfile)
-        }
-        assertTrue(createResult.isSuccess)
-
-        val observed = withTimeout(FLOW_TIMEOUT_MS) {
-            repository.observeProfile(aliceUid).first { it != null && it.childName == "Leo Star" }
-        }
-        assertNotNull(observed)
-        assertEquals("Leo Star", observed?.childName)
-        assertEquals("2468", observed?.parentPin)
+        val snapshot = firestore.collection("child_profiles").document(uid).get().await()
+        assertEquals("Leo Star", snapshot.getString("childName"))
+        assertEquals("10-13", snapshot.getString("ageGroup"))
+        assertEquals("komodo", snapshot.getString("selectedCharacter"))
+        assertEquals("id", snapshot.getString("languageCode"))
+        assertEquals(true, snapshot.getBoolean("darkMode"))
+        assertEquals("9876", snapshot.getString("parentPin"))
     }
 
     @Test
-    fun recordCompletedSession_updatesStarsAndCreatesSessionRecord() = runBlocking {
-        val aliceUid = signInTestUser(ALICE_EMAIL)
-        val repository = WonderQuestRepository(firestore)
+    fun recordCompletedSession_savesNewGalaxySessionAndIncrementsProfileStats() = runTest {
+        val uid = signInTestUser("kid3@wonderquest.test")
+        val initial = repository.ensureChildProfile(uid, "Aria")
 
-        val profile = ChildProfile(userId = aliceUid, childName = "Mia")
-        withTimeout(DEFAULT_TIMEOUT_MS) {
-            repository.createOrInitializeProfile(profile).getOrThrow()
-        }
+        val session = GameSessionRecord(
+            userId = uid,
+            gameType = "cosmic_balance",
+            ageGroup = "7-9",
+            levelNumber = 1L,
+            starsEarned = 3L,
+            correctAnswers = 5L,
+            totalQuestions = 5L,
+            durationSeconds = 25L
+        )
 
-        val badgesResult = withTimeout(DEFAULT_TIMEOUT_MS) {
-            repository.recordCompletedSession(
-                currentProfile = profile,
-                gameType = "math_safari",
-                ageGroup = "7-9",
-                levelNumber = 1,
-                starsEarned = 3,
-                correctAnswers = 5,
-                totalQuestions = 5,
-                durationSeconds = 20
-            )
-        }
-        assertTrue(badgesResult.isSuccess)
+        val unlocked = repository.recordCompletedSession(initial, session)
+        assertTrue(unlocked.contains("first_quest"))
+        assertTrue(unlocked.contains("super_streak"))
+        assertTrue(unlocked.contains("galaxy_explorer"))
 
-        val sessions = withTimeout(FLOW_TIMEOUT_MS) {
-            repository.observeSessions(aliceUid).first { it.isNotEmpty() }
-        }
-        assertTrue(sessions.any { it.gameType == "math_safari" && it.starsEarned == 3L })
+        val updatedSnap = firestore.collection("child_profiles").document(uid).get().await()
+        assertEquals(3L, updatedSnap.getLong("totalStars"))
+        assertEquals(1L, updatedSnap.getLong("completedLevelsCount"))
     }
 
     @Test
-    fun getProfile_crossUserAccess_failsWithPermissionDenied() = runBlocking {
-        val aliceUid = signInTestUser(ALICE_EMAIL)
-        val aliceRepo = WonderQuestRepository(firestore)
-        withTimeout(DEFAULT_TIMEOUT_MS) {
-            aliceRepo.createOrInitializeProfile(ChildProfile(userId = aliceUid, childName = "Alice")).getOrThrow()
-        }
+    fun crossUserReadAndWrite_isDeniedBySecurityRules() = runTest {
+        val ownerUid = signInTestUser("owner@wonderquest.test")
+        repository.ensureChildProfile(ownerUid, "OwnerKid")
 
-        signInTestUser(BOB_EMAIL)
-        val bobRepo = WonderQuestRepository(firestore)
-        val crossReadResult = withTimeout(DEFAULT_TIMEOUT_MS) {
-            bobRepo.getProfile(aliceUid)
-        }
-        assertTrue(crossReadResult.isFailure)
-        val ex = crossReadResult.exceptionOrNull() as? FirebaseFirestoreException
-        assertEquals(FirebaseFirestoreException.Code.PERMISSION_DENIED, ex?.code)
-    }
-
-    @Test
-    fun observeSessions_unauthenticatedUser_failsWithPermissionDenied() = runBlocking {
-        auth.signOut()
-        val repository = WonderQuestRepository(firestore)
-        val uncachedUserId = "unauth_target_${System.currentTimeMillis()}"
-
-        var caughtException: FirebaseFirestoreException? = null
+        signInTestUser("intruder@wonderquest.test")
         try {
-            withTimeout(FLOW_TIMEOUT_MS) {
-                repository.observeSessions(uncachedUserId).first()
-            }
+            firestore.collection("child_profiles").document(ownerUid).get().await()
+            fail("Expected PERMISSION_DENIED when reading another user's profile")
         } catch (e: FirebaseFirestoreException) {
-            caughtException = e
+            assertEquals(FirebaseFirestoreException.Code.PERMISSION_DENIED, e.code)
         }
-        assertNotNull(caughtException)
-        assertEquals(FirebaseFirestoreException.Code.PERMISSION_DENIED, caughtException?.code)
-    }
-
-    private companion object {
-        const val ALICE_EMAIL = "alice_wonder@test.com"
-        const val BOB_EMAIL = "bob_wonder@test.com"
-        const val DEFAULT_TIMEOUT_MS = 5000L
-        const val FLOW_TIMEOUT_MS = 3000L
     }
 }

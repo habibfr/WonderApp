@@ -14,6 +14,11 @@ enum class OperationType(val value: String) {
     WRITE("write"),
 }
 
+object FirestoreErrorHandler {
+    fun handleError(exception: Exception, operationType: OperationType, path: String?): String =
+        handleFirestoreError(exception, operationType, path)
+}
+
 fun handleFirestoreError(exception: Exception, operationType: OperationType, path: String?): String {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser

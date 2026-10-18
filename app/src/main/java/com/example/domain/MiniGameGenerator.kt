@@ -1,157 +1,150 @@
 package com.example.domain
 
-import com.example.data.AgeBracket
+import com.example.data.AgeGroupConfig
+import com.example.data.GamePlayMode
 import com.example.data.MiniGameType
-import kotlin.random.Random
 
-data class PuzzleQuestion(
+enum class VisualSceneKind {
+    COUNTING_SAFARI,
+    SEQUENCE_CRYSTALS,
+    STEPPING_BRIDGE,
+    MATRIX_GRID,
+    POLYGON_GALAXY,
+    MEMORY_CHEST,
+    BALANCE_BEAM
+}
+
+data class VisualCountGroup(
+    val emoji: String,
+    val count: Int,
+    val label: String,
+    val accentHex: Long
+)
+
+data class MiniGameQuestion(
     val index: Int,
-    val title: String,
+    val total: Int,
     val prompt: String,
-    val visualEquationOrTokens: List<String>,
+    val visualEquationOrPattern: String,
+    val visualTokens: List<String>,
     val options: List<String>,
-    val correctOption: String,
-    val hint: String
+    val optionIcons: List<String> = emptyList(),
+    val correctIndex: Int,
+    val hintText: String,
+    val sceneKind: VisualSceneKind = VisualSceneKind.COUNTING_SAFARI,
+    val leftGroup: VisualCountGroup? = null,
+    val rightGroup: VisualCountGroup? = null,
+    val operatorSymbol: String = "+",
+    val polygonSides: Int = 3,
+    val balanceLeftWeight: Int = 5,
+    val balanceRightKnownWeight: Int = 2
 )
 
 object MiniGameGenerator {
 
-    fun generateLevelQuestions(
+    fun generateQuestions(
         gameType: MiniGameType,
-        ageBracket: AgeBracket,
+        ageGroup: AgeGroupConfig,
         levelNumber: Int,
-        lang: String,
-        questionCount: Int = 5
-    ): List<PuzzleQuestion> {
-        val seed = (gameType.id.hashCode() * 31) + (ageBracket.code.hashCode() * 17) + (levelNumber * 101)
-        val rng = Random(seed)
-        return (1..questionCount).map { idx ->
+        languageCode: String,
+        playMode: GamePlayMode = GamePlayMode.ADVENTURE
+    ): List<MiniGameQuestion> {
+        val total = playMode.questionCount
+        return (1..total).map { idx ->
             when (gameType) {
-                MiniGameType.MATH_SAFARI -> buildMathSafariQuestion(idx, ageBracket, levelNumber, lang, rng)
-                MiniGameType.PATTERN_PORTAL -> buildPatternPortalQuestion(idx, ageBracket, levelNumber, lang, rng)
-                MiniGameType.NUMBER_BRIDGE -> buildNumberBridgeQuestion(idx, ageBracket, levelNumber, lang, rng)
-                MiniGameType.LOGIC_MATRIX -> buildLogicMatrixQuestion(idx, ageBracket, levelNumber, lang, rng)
+                MiniGameType.MATH_SAFARI -> buildMathSafariQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.PATTERN_PORTAL -> buildPatternPortalQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.NUMBER_BRIDGE -> buildNumberBridgeQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.LOGIC_MATRIX -> buildLogicMatrixQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.SHAPE_GALAXY -> buildShapeGalaxyQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.MEMORY_TREASURE -> buildMemoryTreasureQuestion(idx, total, ageGroup, levelNumber, languageCode)
+                MiniGameType.COSMIC_BALANCE -> buildCosmicBalanceQuestion(idx, total, ageGroup, levelNumber, languageCode)
             }
         }
     }
 
     private fun buildMathSafariQuestion(
         index: Int,
-        ageBracket: AgeBracket,
-        levelNumber: Int,
-        lang: String,
-        rng: Random
-    ): PuzzleQuestion {
-        val emojis = listOf("🍎", "🦋", "🌟", "🐢", "🍓", "🎈", "🦊", "🦉")
-        val emoji = emojis[(index + levelNumber) % emojis.size]
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val safariAnimals = listOf(
+            "🦁" to 0xFFFFB300L,
+            "🐘" to 0xFF26A69AL,
+            "🦒" to 0xFFFF7043L,
+            "🐼" to 0xFF7E57C2L,
+            "🦜" to 0xFFEC407AL,
+            "🐢" to 0xFF66BB6AL
+        )
+        val (emoji, colorHex) = safariAnimals[(index + level) % safariAnimals.size]
 
-        return when (ageBracket) {
-            AgeBracket.EARLY -> {
-                val a = rng.nextInt(1, 5 + (levelNumber % 3))
-                val b = rng.nextInt(1, 5)
-                val sum = a + b
-                val tokens = List(a) { emoji } + listOf("➕") + List(b) { emoji }
-                val prompt = when (lang) {
-                    "es" -> "¡Cuenta y suma! ¿Cuántos $emoji hay en total? ($a + $b)"
-                    "fr" -> "Compte et additionne ! Combien de $emoji en tout ? ($a + $b)"
-                    "hi" -> "गिनें और जोड़ें! कुल कितने $emoji हैं? ($a + $b)"
-                    else -> "Count and add! How many $emoji altogether? ($a + $b)"
-                }
-                val hint = when (lang) {
-                    "es" -> "Cuenta primero $a y luego sigue contando $b más."
-                    "fr" -> "Compte d'abord $a puis ajoute encore $b."
-                    "hi" -> "पहले $a गिनें और फिर उसमें $b और जोड़ें।"
-                    else -> "Start at $a and count up $b more one by one!"
-                }
-                PuzzleQuestion(
+        return when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> {
+                val a = ((index + level) % 4) + 1
+                val b = (index % 3) + 1
+                val answer = a + b
+                val options = makeNumericOptions(answer, minVal = 1)
+                MiniGameQuestion(
                     index = index,
-                    title = "$a + $b = ?",
-                    prompt = prompt,
-                    visualEquationOrTokens = tokens,
-                    options = numericOptions(sum, rng, minVal = 1),
-                    correctOption = sum.toString(),
-                    hint = hint
+                    total = total,
+                    prompt = localizedMathPrompt(lang, isAddition = true, emoji = emoji),
+                    visualEquationOrPattern = "$a $emoji  +  $b $emoji  =  ?",
+                    visualTokens = List(a) { emoji } + listOf("➕") + List(b) { emoji },
+                    options = options.map { it.toString() },
+                    optionIcons = options.map { count -> List(count.coerceAtMost(4)) { emoji }.joinToString("") },
+                    correctIndex = options.indexOf(answer),
+                    hintText = localizedHintCount(lang, a, b, answer),
+                    sceneKind = VisualSceneKind.COUNTING_SAFARI,
+                    leftGroup = VisualCountGroup(emoji, a, "$a", colorHex),
+                    rightGroup = VisualCountGroup(emoji, b, "$b", colorHex),
+                    operatorSymbol = "+"
                 )
             }
-            AgeBracket.MIDDLE -> {
-                val isMultiply = index % 2 == 0
-                if (isMultiply) {
-                    val a = rng.nextInt(2, 6 + (levelNumber % 4))
-                    val b = rng.nextInt(2, 6)
-                    val ans = a * b
-                    val prompt = when (lang) {
-                        "es" -> "$a grupos mágicos de $b $emoji cada uno. ¿Cuántos en total?"
-                        "fr" -> "$a groupes magiques de $b $emoji chacun. Combien au total ?"
-                        "hi" -> "$emoji के $a समूह, प्रत्येक में $b। कुल कितने हैं?"
-                        else -> "$a magic groups with $b $emoji in each group. How many in total?"
-                    }
-                    val hint = when (lang) {
-                        "es" -> "Suma $b un total de $a veces ($a × $b)."
-                        "fr" -> "Additionne $b exactement $a fois ($a × $b)."
-                        "hi" -> "$b को $a बार जोड़ें ($a × $b)।"
-                        else -> "Think of $a × $b as adding $b together $a times!"
-                    }
-                    PuzzleQuestion(
-                        index = index,
-                        title = "$a × $b = ?",
-                        prompt = prompt,
-                        visualEquationOrTokens = listOf("$a × $b", emoji, "✨"),
-                        options = numericOptions(ans, rng, minVal = 2),
-                        correctOption = ans.toString(),
-                        hint = hint
-                    )
-                } else {
-                    val a = rng.nextInt(12, 28 + levelNumber)
-                    val b = rng.nextInt(4, 11)
-                    val ans = a - b
-                    val prompt = when (lang) {
-                        "es" -> "Resuelve la resta de la isla: $a − $b = ?"
-                        "fr" -> "Résous la soustraction de l'île : $a − $b = ?"
-                        "hi" -> "द्वीप का घटाव हल करें: $a − $b = ?"
-                        else -> "Solve the island subtraction quest: $a − $b = ?"
-                    }
-                    val hint = when (lang) {
-                        "es" -> "Resta primero las unidades y luego las decenas de $a."
-                        "fr" -> "Recule de $b à partir de $a."
-                        "hi" -> "$a में से $b कदम पीछे गिनें।"
-                        else -> "Count backward $b steps starting from $a!"
-                    }
-                    PuzzleQuestion(
-                        index = index,
-                        title = "$a − $b = ?",
-                        prompt = prompt,
-                        visualEquationOrTokens = listOf("$a", "➖", "$b", "🟰", "❓"),
-                        options = numericOptions(ans, rng, minVal = 1),
-                        correctOption = ans.toString(),
-                        hint = hint
-                    )
-                }
-            }
-            AgeBracket.OLDER -> {
-                val a = rng.nextInt(3, 9)
-                val b = rng.nextInt(3, 8)
-                val c = rng.nextInt(4, 15)
-                val ans = (a * b) + c
-                val prompt = when (lang) {
-                    "es" -> "Orden de operaciones: ($a × $b) + $c = ?"
-                    "fr" -> "Priorité des opérations : ($a × $b) + $c = ?"
-                    "hi" -> "संक्रियाओं का क्रम: ($a × $b) + $c = ?"
-                    else -> "Master Wizard Expression: ($a × $b) + $c = ?"
-                }
-                val hint = when (lang) {
-                    "es" -> "Multiplica primero $a × $b = ${a * b}, luego suma $c."
-                    "fr" -> "Calcule d'abord $a × $b = ${a * b}, puis ajoute $c."
-                    "hi" -> "पहले गुणा करें $a × $b = ${a * b}, फिर $c जोड़ें।"
-                    else -> "First multiply $a × $b = ${a * b}, then add $c!"
-                }
-                PuzzleQuestion(
+            AgeGroupConfig.AGES_7_9 -> {
+                val isAdd = index % 2 == 1
+                val a = (level * 2) + index + 3
+                val b = (index % 4) + 2
+                val answer = if (isAdd) a + b else a - b
+                val op = if (isAdd) "+" else "−"
+                val options = makeNumericOptions(answer, minVal = 1)
+                MiniGameQuestion(
                     index = index,
-                    title = "($a × $b) + $c = ?",
-                    prompt = prompt,
-                    visualEquationOrTokens = listOf("($a × $b)", "➕", "$c", "🟰", "❓"),
-                    options = numericOptions(ans, rng, minVal = 5),
-                    correctOption = ans.toString(),
-                    hint = hint
+                    total = total,
+                    prompt = localizedMathPrompt(lang, isAddition = isAdd, emoji = emoji),
+                    visualEquationOrPattern = "$a  $op  $b  =  ?",
+                    visualTokens = List(a.coerceAtMost(6)) { emoji } + listOf(op) + List(b.coerceAtMost(5)) { emoji },
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { emoji },
+                    correctIndex = options.indexOf(answer),
+                    hintText = localizedHintStartFrom(lang, a, b, isAdd, answer),
+                    sceneKind = VisualSceneKind.COUNTING_SAFARI,
+                    leftGroup = VisualCountGroup(emoji, a.coerceAtMost(8), "$a", colorHex),
+                    rightGroup = VisualCountGroup(emoji, b.coerceAtMost(8), "$b", colorHex),
+                    operatorSymbol = op
+                )
+            }
+            AgeGroupConfig.AGES_10_13 -> {
+                val a = (index + 2) + (level % 4)
+                val b = (index % 4) + 2
+                val c = index
+                val answer = (a * b) + c
+                val options = makeNumericOptions(answer, minVal = 4)
+                MiniGameQuestion(
+                    index = index,
+                    total = total,
+                    prompt = localizedOrderOfOpsPrompt(lang),
+                    visualEquationOrPattern = "($a × $b) + $c = ?",
+                    visualTokens = listOf("$a × $b", "➕", "$c", "🟰", "❓"),
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { "⚡" },
+                    correctIndex = options.indexOf(answer),
+                    hintText = "$a × $b = ${a * b}, + $c = $answer",
+                    sceneKind = VisualSceneKind.COUNTING_SAFARI,
+                    leftGroup = VisualCountGroup(emoji, a.coerceAtMost(7), "$a×$b", colorHex),
+                    rightGroup = VisualCountGroup("⭐", c.coerceAtMost(6), "+$c", 0xFFFFB300L),
+                    operatorSymbol = "×+"
                 )
             }
         }
@@ -159,103 +152,77 @@ object MiniGameGenerator {
 
     private fun buildPatternPortalQuestion(
         index: Int,
-        ageBracket: AgeBracket,
-        levelNumber: Int,
-        lang: String,
-        rng: Random
-    ): PuzzleQuestion {
-        return when (ageBracket) {
-            AgeBracket.EARLY -> {
-                val pairs = listOf(
-                    listOf("🔴", "🔵"),
-                    listOf("🌞", "🌙"),
-                    listOf("⭐", "🌈"),
-                    listOf("🍎", "🍌"),
-                    listOf("🐸", "🦋")
-                )
-                val pair = pairs[(index + levelNumber) % pairs.size]
-                val sequence = listOf(pair[0], pair[1], pair[0], pair[1], pair[0], "❓")
-                val correct = pair[1]
-                val distractors = listOf("🟣", "🍀", "💎").filter { it != correct }
-                val options = (listOf(correct) + distractors).shuffled(rng)
-                val prompt = when (lang) {
-                    "es" -> "¿Qué símbolo sigue en el portal mágico?"
-                    "fr" -> "Quel symbole vient ensuite dans le portail ?"
-                    "hi" -> "जादुई पैटर्न में आगे कौन सा चिन्ह आएगा?"
-                    else -> "What comes next in the glowing Pattern Portal?"
-                }
-                val hint = when (lang) {
-                    "es" -> "Observa cómo se alternan: ${pair[0]} y luego ${pair[1]}."
-                    "fr" -> "Regarde l'alternance : ${pair[0]} puis ${pair[1]}."
-                    "hi" -> "देखें कि ${pair[0]} के बाद हमेशा ${pair[1]} आता है।"
-                    else -> "Look closely! After every ${pair[0]} comes ${pair[1]}!"
-                }
-                PuzzleQuestion(
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val patternSets = listOf(
+            listOf("🌞", "🌙", "⭐"),
+            listOf("🍎", "🍌", "🍇"),
+            listOf("🔺", "🔷", "🟢"),
+            listOf("🦊", "🐼", "🦁"),
+            listOf("🚀", "🪐", "☄️"),
+            listOf("🌺", "🦋", "🌈")
+        )
+        val set = patternSets[(index + level) % patternSets.size]
+        return when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> {
+                val a = set[0]
+                val b = set[1]
+                val sequence = listOf(a, b, a, b, a, "❓")
+                val correct = b
+                val options = listOf(a, b, set[2], "🎈").distinct()
+                MiniGameQuestion(
                     index = index,
-                    title = sequence.joinToString("  "),
-                    prompt = prompt,
-                    visualEquationOrTokens = sequence,
+                    total = total,
+                    prompt = localizedPatternPrompt(lang),
+                    visualEquationOrPattern = sequence.joinToString("  →  "),
+                    visualTokens = sequence,
                     options = options,
-                    correctOption = correct,
-                    hint = hint
+                    optionIcons = options,
+                    correctIndex = options.indexOf(correct),
+                    hintText = "$a, $b, $a, $b ... → $correct",
+                    sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
                 )
             }
-            AgeBracket.MIDDLE -> {
-                val step = rng.nextInt(2, 6)
-                val start = rng.nextInt(2, 10)
-                val seq = (0..3).map { (start + it * step).toString() } + listOf("❓")
-                val correct = start + 4 * step
-                val prompt = when (lang) {
-                    "es" -> "Completa la secuencia numérica del portal:"
-                    "fr" -> "Complète la suite numérique du portail :"
-                    "hi" -> "पोर्टल की संख्या श्रृंखला पूरी करें:"
-                    else -> "Find the next number to unlock the Pattern Portal:"
-                }
-                val hint = when (lang) {
-                    "es" -> "Cada paso suma +$step al número anterior."
-                    "fr" -> "On ajoute +$step à chaque étape."
-                    "hi" -> "हर अगली संख्या में +$step जोड़ा गया है।"
-                    else -> "Each stone increases by +$step! Add $step to ${start + 3 * step}."
-                }
-                PuzzleQuestion(
+            AgeGroupConfig.AGES_7_9 -> {
+                val a = set[0]
+                val b = set[1]
+                val c = set[2]
+                val sequence = listOf(a, b, c, a, b, "❓")
+                val correct = c
+                val options = listOf(c, a, b, "💎")
+                MiniGameQuestion(
                     index = index,
-                    title = seq.joinToString(" → "),
-                    prompt = prompt,
-                    visualEquationOrTokens = seq,
-                    options = numericOptions(correct, rng, minVal = 1),
-                    correctOption = correct.toString(),
-                    hint = hint
+                    total = total,
+                    prompt = localizedPatternPrompt(lang),
+                    visualEquationOrPattern = sequence.joinToString("  •  "),
+                    visualTokens = sequence,
+                    options = options,
+                    optionIcons = options,
+                    correctIndex = options.indexOf(correct),
+                    hintText = "$a → $b → $c",
+                    sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
                 )
             }
-            AgeBracket.OLDER -> {
-                // Growing difference sequence: +2, +4, +6, +8...
-                val base = rng.nextInt(2, 8)
-                val n1 = base
-                val n2 = n1 + 2
-                val n3 = n2 + 4
-                val n4 = n3 + 6
-                val correct = n4 + 8
-                val seq = listOf("$n1", "$n2", "$n3", "$n4", "❓")
-                val prompt = when (lang) {
-                    "es" -> "Patrón de diferencias crecientes: ¿qué número sigue?"
-                    "fr" -> "Suite à écarts croissants : quel nombre suit ?"
-                    "hi" -> "बढ़ते अंतर का पैटर्न: अगली संख्या क्या होगी?"
-                    else -> "Growing-Step Sequence: What number completes the portal?"
-                }
-                val hint = when (lang) {
-                    "es" -> "Los saltos crecen: +2, +4, +6... ¡el siguiente salto es +8!"
-                    "fr" -> "Les écarts augmentent : +2, +4, +6... le prochain est +8 !"
-                    "hi" -> "अंतर बढ़ रहा है: +2, +4, +6... अगला अंतर +8 होगा!"
-                    else -> "Look at the gaps: +2, +4, +6... so the next jump is +8!"
-                }
-                PuzzleQuestion(
+            AgeGroupConfig.AGES_10_13 -> {
+                val step = index + 2
+                val start = level * 2
+                val seqNums = listOf(start, start + step, start + step * 2, start + step * 3)
+                val answer = start + step * 4
+                val options = makeNumericOptions(answer, minVal = 2)
+                MiniGameQuestion(
                     index = index,
-                    title = seq.joinToString(" → "),
-                    prompt = prompt,
-                    visualEquationOrTokens = seq,
-                    options = numericOptions(correct, rng, minVal = 5),
-                    correctOption = correct.toString(),
-                    hint = hint
+                    total = total,
+                    prompt = localizedPatternPrompt(lang),
+                    visualEquationOrPattern = "${seqNums.joinToString(" , ")} , ?",
+                    visualTokens = seqNums.map { it.toString() } + listOf("❓"),
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { "🔮" },
+                    correctIndex = options.indexOf(answer),
+                    hintText = "+$step → ${seqNums.last()} + $step = $answer",
+                    sceneKind = VisualSceneKind.SEQUENCE_CRYSTALS
                 )
             }
         }
@@ -263,249 +230,375 @@ object MiniGameGenerator {
 
     private fun buildNumberBridgeQuestion(
         index: Int,
-        ageBracket: AgeBracket,
-        levelNumber: Int,
-        lang: String,
-        rng: Random
-    ): PuzzleQuestion {
-        return when (ageBracket) {
-            AgeBracket.EARLY -> {
-                val missing = rng.nextInt(1, 6)
-                val known = rng.nextInt(1, 5)
-                val total = missing + known
-                val prompt = when (lang) {
-                    "es" -> "¿Qué número falta para cruzar el puente? [ ? ] + $known = $total"
-                    "fr" -> "Quel nombre manque sur le pont ? [ ? ] + $known = $total"
-                    "hi" -> "पुल पार करने के लिए कौन सी संख्या चाहिए? [ ? ] + $known = $total"
-                    else -> "Find the missing bridge stone! [ ? ] + $known = $total"
-                }
-                val hint = when (lang) {
-                    "es" -> "¿Cuánto le falta a $known para llegar a $total? ($total − $known)"
-                    "fr" -> "Combien faut-il ajouter à $known pour faire $total ?"
-                    "hi" -> "$known में कितना जोड़ें कि $total बन जाए? ($total − $known)"
-                    else -> "Count up from $known until you reach $total!"
-                }
-                PuzzleQuestion(
-                    index = index,
-                    title = "[ ? ] + $known = $total",
-                    prompt = prompt,
-                    visualEquationOrTokens = listOf("🌉", "❓", "➕", "$known", "🟰", "$total"),
-                    options = numericOptions(missing, rng, minVal = 1),
-                    correctOption = missing.toString(),
-                    hint = hint
-                )
-            }
-            AgeBracket.MIDDLE -> {
-                val missing = rng.nextInt(3, 12 + levelNumber)
-                val known = rng.nextInt(4, 12)
-                val total = missing + known
-                val prompt = when (lang) {
-                    "es" -> "Equilibra el puente: $known + [ ? ] = $total"
-                    "fr" -> "Équilibre le pont : $known + [ ? ] = $total"
-                    "hi" -> "पुल को संतुलित करें: $known + [ ? ] = $total"
-                    else -> "Balance the equation bridge: $known + [ ? ] = $total"
-                }
-                val hint = when (lang) {
-                    "es" -> "Calcula $total − $known para hallar la piedra faltante."
-                    "fr" -> "Calcule $total − $known pour trouver la pierre."
-                    "hi" -> "सही पत्थर खोजने के लिए $total − $known करें।"
-                    else -> "Subtract $total − $known to discover the missing bridge stone!"
-                }
-                PuzzleQuestion(
-                    index = index,
-                    title = "$known + [ ? ] = $total",
-                    prompt = prompt,
-                    visualEquationOrTokens = listOf("$known", "➕", "❓", "🟰", "$total"),
-                    options = numericOptions(missing, rng, minVal = 1),
-                    correctOption = missing.toString(),
-                    hint = hint
-                )
-            }
-            AgeBracket.OLDER -> {
-                val x = rng.nextInt(2, 9)
-                val mult = rng.nextInt(2, 6)
-                val add = rng.nextInt(3, 12)
-                val rhs = mult * x + add
-                val prompt = when (lang) {
-                    "es" -> "Resuelve el misterio algebraico: ($mult × ❓) + $add = $rhs"
-                    "fr" -> "Résous l'équation du pont : ($mult × ❓) + $add = $rhs"
-                    "hi" -> "बीजगणित पहेली सुलझाएं: ($mult × ❓) + $add = $rhs"
-                    else -> "Solve for the mystery crystal ❓: ($mult × ❓) + $add = $rhs"
-                }
-                val hint = when (lang) {
-                    "es" -> "Resta $rhs − $add = ${rhs - add}, luego divide entre $mult."
-                    "fr" -> "Fais $rhs − $add = ${rhs - add}, puis divise par $mult."
-                    "hi" -> "पहले $rhs − $add = ${rhs - add} करें, फिर $mult से भाग दें।"
-                    else -> "First subtract $add from $rhs (${rhs - add}), then divide by $mult!"
-                }
-                PuzzleQuestion(
-                    index = index,
-                    title = "($mult × ❓) + $add = $rhs",
-                    prompt = prompt,
-                    visualEquationOrTokens = listOf("${mult}×❓", "➕", "$add", "🟰", "$rhs"),
-                    options = numericOptions(x, rng, minVal = 1),
-                    correctOption = x.toString(),
-                    hint = hint
-                )
-            }
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val step = when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> 1
+            AgeGroupConfig.AGES_7_9 -> (index % 3) + 2
+            AgeGroupConfig.AGES_10_13 -> (index % 4) + 4
         }
+        val start = level + index
+        val stones = listOf(
+            start,
+            start + step,
+            start + step * 2,
+            start + step * 3,
+            start + step * 4
+        )
+        val missingPos = 2
+        val answer = stones[missingPos]
+        val displayStones = stones.mapIndexed { idx, value ->
+            if (idx == missingPos) "❓" else value.toString()
+        }
+        val options = makeNumericOptions(answer, minVal = 1)
+        return MiniGameQuestion(
+            index = index,
+            total = total,
+            prompt = localizedBridgePrompt(lang, step),
+            visualEquationOrPattern = displayStones.joinToString("  🌉  "),
+            visualTokens = displayStones,
+            options = options.map { it.toString() },
+            optionIcons = List(options.size) { "🪨" },
+            correctIndex = options.indexOf(answer),
+            hintText = "${stones[1]} + $step = $answer",
+            sceneKind = VisualSceneKind.STEPPING_BRIDGE
+        )
     }
 
     private fun buildLogicMatrixQuestion(
         index: Int,
-        ageBracket: AgeBracket,
-        levelNumber: Int,
-        lang: String,
-        rng: Random
-    ): PuzzleQuestion {
-        val variant = (index + levelNumber) % 4
-        return when (ageBracket) {
-            AgeBracket.EARLY -> {
-                when (variant) {
-                    0 -> PuzzleQuestion(
-                        index = index,
-                        title = "🍎  🍌  🚗  🍓",
-                        prompt = when (lang) {
-                            "es" -> "¿Cuál NO es una fruta para comer?"
-                            "fr" -> "Lequel N'EST PAS un fruit qui se mange ?"
-                            "hi" -> "इनमें से कौन सा खाने वाला फल नहीं है?"
-                            else -> "Spot the Odd-One-Out! Which one is NOT a fruit?"
-                        },
-                        visualEquationOrTokens = listOf("🍎", "🍌", "🚗", "🍓"),
-                        options = listOf("🍎", "🍌", "🚗", "🍓"),
-                        correctOption = "🚗",
-                        hint = when (lang) {
-                            "es" -> "¡Tres son frutas deliciosas y uno tiene ruedas!"
-                            "fr" -> "Trois sont des fruits et l'un a des roues !"
-                            "hi" -> "तीन मीठे फल हैं और एक पहियों वाली गाड़ी है!"
-                            else -> "Three are yummy fruits, and one has four wheels!"
-                        }
-                    )
-                    1 -> PuzzleQuestion(
-                        index = index,
-                        title = "🐶  🐱  🐰  🌵",
-                        prompt = when (lang) {
-                            "es" -> "¿Cuál NO es un animalito?"
-                            "fr" -> "Lequel N'EST PAS un animal ?"
-                            "hi" -> "इनमें से कौन एक जानवर नहीं है?"
-                            else -> "Which one is a plant instead of a furry animal?"
-                        },
-                        visualEquationOrTokens = listOf("🐶", "🐱", "🐰", "🌵"),
-                        options = listOf("🐶", "🐱", "🐰", "🌵"),
-                        correctOption = "🌵",
-                        hint = when (lang) {
-                            "es" -> "Busca la planta verde del desierto."
-                            "fr" -> "Cherche la plante verte du désert."
-                            "hi" -> "हरे रंग के कैक्टस पौधे को पहचानें।"
-                            else -> "Look for the prickly green cactus plant!"
-                        }
-                    )
-                    2 -> PuzzleQuestion(
-                        index = index,
-                        title = "✈️  🦅  🦋  ⚓",
-                        prompt = when (lang) {
-                            "es" -> "¿Cuál NO vuela por el cielo?"
-                            "fr" -> "Lequel NE vole PAS dans le ciel ?"
-                            "hi" -> "इनमें से कौन आकाश में नहीं उड़ता?"
-                            else -> "Which one stays deep under the ocean instead of flying?"
-                        },
-                        visualEquationOrTokens = listOf("✈️", "🦅", "🦋", "⚓"),
-                        options = listOf("✈️", "🦅", "🦋", "⚓"),
-                        correctOption = "⚓",
-                        hint = when (lang) {
-                            "es" -> "El ancla se hunde en el mar."
-                            "fr" -> "L'ancre va au fond de l'eau."
-                            "hi" -> "जहाज का लंगर पानी के नीचे जाता है।"
-                            else -> "An anchor sinks down into the water!"
-                        }
-                    )
-                    else -> PuzzleQuestion(
-                        index = index,
-                        title = "2  •  5  •  9  •  1",
-                        prompt = when (lang) {
-                            "es" -> "¿Cuál es el número MÁS GRANDE?"
-                            "fr" -> "Quel est le PLUS GRAND nombre ?"
-                            "hi" -> "इनमें से सबसे बड़ी संख्या कौन सी है?"
-                            else -> "Number Detective: Which number is the BIGGEST?"
-                        },
-                        visualEquationOrTokens = listOf("2️⃣", "5️⃣", "9️⃣", "1️⃣"),
-                        options = listOf("2", "5", "9", "1"),
-                        correctOption = "9",
-                        hint = when (lang) {
-                            "es" -> "El 9 está casi al llegar al 10."
-                            "fr" -> "9 est juste avant 10."
-                            "hi" -> "9 संख्या 10 के सबसे करीब और सबसे बड़ी है।"
-                            else -> "9 is right next to 10—the biggest of the group!"
-                        }
-                    )
-                }
-            }
-            AgeBracket.MIDDLE -> {
-                val evenTarget = rng.nextInt(2, 9) * 2
-                val odds = listOf(evenTarget + 1, evenTarget + 3, evenTarget + 5)
-                val opts = (listOf(evenTarget) + odds).shuffled(rng).map { it.toString() }
-                PuzzleQuestion(
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        return when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> {
+                val pairs = listOf(
+                    Triple("🐶", "🦴", listOf("🦴", "🚗", "🎩", "⏰")),
+                    Triple("🐝", "🌻", listOf("🌻", "🥾", "🛋️", "📎")),
+                    Triple("🐟", "🌊", listOf("🌊", "🔥", "🌵", "🚲")),
+                    Triple("🐦", "🪺", listOf("🪺", "🛹", "🧊", "🎸")),
+                    Triple("🐒", "🍌", listOf("🍌", "🛷", "🔦", "🧱"))
+                )
+                val chosen = pairs[(index + level) % pairs.size]
+                val shuffled = chosen.third.shuffled(java.util.Random((index * 31 + level).toLong()))
+                MiniGameQuestion(
                     index = index,
-                    title = opts.joinToString("  •  "),
-                    prompt = when (lang) {
-                        "es" -> "Acertijo Lógico: ¿Cuál de estos números es PAR (divisible por 2)?"
-                        "fr" -> "Énigme Logique : Lequel de ces nombres est PAIR ?"
-                        "hi" -> "तर्क पहेली: इनमें से कौन सी संख्या सम (Even) है?"
-                        else -> "Logic Detective: Which of these numbers is EVEN (divisible by 2)?"
-                    },
-                    visualEquationOrTokens = opts.map { "🔮$it" },
-                    options = opts,
-                    correctOption = evenTarget.toString(),
-                    hint = when (lang) {
-                        "es" -> "Los números pares terminan en 0, 2, 4, 6 u 8."
-                        "fr" -> "Les nombres pairs se terminent par 0, 2, 4, 6 ou 8."
-                        "hi" -> "सम संख्याएं 2 से पूरी तरह विभाजित हो जाती हैं (अंत में 0, 2, 4, 6, 8)।"
-                        else -> "Even numbers can be split into two equal halves (ending in 0, 2, 4, 6, or 8)!"
-                    }
+                    total = total,
+                    prompt = localizedLogicPairPrompt(lang, chosen.first),
+                    visualEquationOrPattern = "${chosen.first}  ➔  ❓",
+                    visualTokens = listOf(chosen.first, "✨", "❓"),
+                    options = shuffled,
+                    optionIcons = shuffled,
+                    correctIndex = shuffled.indexOf(chosen.second),
+                    hintText = "${chosen.first} ❤️ ${chosen.second}",
+                    sceneKind = VisualSceneKind.MATRIX_GRID
                 )
             }
-            AgeBracket.OLDER -> {
-                val primes = listOf(11, 13, 17, 19, 23, 29)
-                val targetPrime = primes[(index + levelNumber) % primes.size]
-                val composites = listOf(12, 15, 21, 25, 27, 28).shuffled(rng).take(3)
-                val opts = (listOf(targetPrime) + composites).shuffled(rng).map { it.toString() }
-                PuzzleQuestion(
+            AgeGroupConfig.AGES_7_9 -> {
+                val shapes = listOf("🔴", "🟦", "🔺")
+                val target = shapes[(index + level) % shapes.size]
+                val others = shapes.filter { it != target }
+                val options = listOf(target, others[0], others[1], "⬛")
+                MiniGameQuestion(
                     index = index,
-                    title = opts.joinToString("  •  "),
-                    prompt = when (lang) {
-                        "es" -> "Lógica Maestra: ¿Cuál de estos es un NÚMERO PRIMO?"
-                        "fr" -> "Logique Maître : Lequel de ces nombres est un NOMBRE PREMIER ?"
-                        "hi" -> "मास्टर तर्क: इनमें से कौन सी एक अभाज्य संख्या (Prime Number) है?"
-                        else -> "Master Logic Riddle: Which of these is a PRIME number?"
-                    },
-                    visualEquationOrTokens = opts.map { "⚡$it" },
-                    options = opts,
-                    correctOption = targetPrime.toString(),
-                    hint = when (lang) {
-                        "es" -> "Un número primo solo se puede dividir exactamente entre 1 y sí mismo."
-                        "fr" -> "Un nombre premier n'est divisible que par 1 et par lui-même."
-                        "hi" -> "अभाज्य संख्या केवल 1 और स्वयं से विभाजित होती है।"
-                        else -> "A prime number has only two factors: 1 and itself!"
-                    }
+                    total = total,
+                    prompt = localizedMatrixRowPrompt(lang),
+                    visualEquationOrPattern = "${others[0]}   ${others[1]}   ❓",
+                    visualTokens = listOf(others[0], others[1], "❓"),
+                    options = options,
+                    optionIcons = options,
+                    correctIndex = 0,
+                    hintText = "🔴 + 🟦 + 🔺 → $target",
+                    sceneKind = VisualSceneKind.MATRIX_GRID
+                )
+            }
+            AgeGroupConfig.AGES_10_13 -> {
+                val base = index + level + 2
+                val mult = (index % 3) + 2
+                val topA = base
+                val topB = base * mult
+                val botA = base + 3
+                val answer = botA * mult
+                val options = makeNumericOptions(answer, minVal = 4)
+                MiniGameQuestion(
+                    index = index,
+                    total = total,
+                    prompt = localizedMatrixGridPrompt(lang),
+                    visualEquationOrPattern = "[ $topA ➔ $topB ]   •   [ $botA ➔ ? ]",
+                    visualTokens = listOf("$topA ➔ $topB", "×$mult", "$botA ➔ ❓"),
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { "🧩" },
+                    correctIndex = options.indexOf(answer),
+                    hintText = "× $mult: $botA × $mult = $answer",
+                    sceneKind = VisualSceneKind.MATRIX_GRID
                 )
             }
         }
     }
 
-    private fun numericOptions(correct: Int, rng: Random, minVal: Int = 0): List<String> {
-        val set = mutableSetOf(correct)
-        val offsets = listOf(-3, -2, -1, 1, 2, 3, 4, 5).shuffled(rng)
-        for (offset in offsets) {
-            if (set.size >= 4) break
-            val candidate = correct + offset
-            if (candidate >= minVal && candidate != correct) {
-                set.add(candidate)
+    private fun buildShapeGalaxyQuestion(
+        index: Int,
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val shapesData = listOf(
+            Triple(3, "🔺", mapOf("id" to "Segitiga", "en" to "Triangle", "es" to "Triángulo", "fr" to "Triangle", "hi" to "त्रिभुज")),
+            Triple(4, "🟦", mapOf("id" to "Persegi", "en" to "Square", "es" to "Cuadrado", "fr" to "Carré", "hi" to "वर्ग")),
+            Triple(5, "⬠", mapOf("id" to "Segi Lima", "en" to "Pentagon", "es" to "Pentágono", "fr" to "Pentagone", "hi" to "पंचभुज")),
+            Triple(6, "⬡", mapOf("id" to "Segi Enam", "en" to "Hexagon", "es" to "Hexágono", "fr" to "Hexagone", "hi" to "षट्भुज")),
+            Triple(8, "🛑", mapOf("id" to "Segi Delapan", "en" to "Octagon", "es" to "Octágono", "fr" to "Octogone", "hi" to "अष्टभुज"))
+        )
+        val picked = shapesData[(index + level) % shapesData.size]
+        val sides = picked.first
+        val shapeEmoji = picked.second
+        val shapeName = picked.third[lang] ?: picked.third["id"]!!
+
+        return when (ageGroup) {
+            AgeGroupConfig.AGES_4_6, AgeGroupConfig.AGES_7_9 -> {
+                val options = listOf(sides, sides + 1, (sides - 1).coerceAtLeast(3), sides + 2).distinct()
+                    .let { if (it.size < 4) (it + listOf(7, 9)).distinct().take(4) else it }
+                MiniGameQuestion(
+                    index = index,
+                    total = total,
+                    prompt = localizedShapePrompt(lang, shapeName),
+                    visualEquationOrPattern = "$shapeEmoji  $shapeName  =  ? Sisi / Sudut",
+                    visualTokens = List(sides.coerceAtMost(6)) { "✨" } + listOf(shapeEmoji),
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { "📐" },
+                    correctIndex = options.indexOf(sides),
+                    hintText = localizedShapeHint(lang, shapeName, sides),
+                    sceneKind = VisualSceneKind.POLYGON_GALAXY,
+                    polygonSides = sides
+                )
+            }
+            AgeGroupConfig.AGES_10_13 -> {
+                val sideLength = (index % 4) + 2
+                val perimeter = sides * sideLength
+                val options = makeNumericOptions(perimeter, minVal = 6)
+                MiniGameQuestion(
+                    index = index,
+                    total = total,
+                    prompt = localizedPerimeterPrompt(lang, shapeName, sides, sideLength),
+                    visualEquationOrPattern = "$shapeName ($sides × $sideLength) = ?",
+                    visualTokens = listOf(shapeEmoji, "$sides sisi", "× $sideLength", "🟰 ❓"),
+                    options = options.map { it.toString() },
+                    optionIcons = List(options.size) { "🪐" },
+                    correctIndex = options.indexOf(perimeter),
+                    hintText = "$sides × $sideLength = $perimeter",
+                    sceneKind = VisualSceneKind.POLYGON_GALAXY,
+                    polygonSides = sides
+                )
             }
         }
-        var fallback = correct + 1
-        while (set.size < 4) {
-            set.add(fallback++)
+    }
+
+    private fun buildMemoryTreasureQuestion(
+        index: Int,
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val treasureSets = listOf(
+            listOf("👑", "💎", "🏆", "🗝️"),
+            listOf("🐬", "🐙", "🦀", "🐳"),
+            listOf("🍓", "🍍", "🍉", "🍒"),
+            listOf("🚀", "🛸", "🛰️", "🌠"),
+            listOf("🦖", "🦕", "🐉", "🐢")
+        )
+        val set = treasureSets[(index + level) % treasureSets.size]
+        val cardCount = when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> 3
+            AgeGroupConfig.AGES_7_9 -> 4
+            AgeGroupConfig.AGES_10_13 -> 4
         }
-        return set.toList().shuffled(rng).map { it.toString() }
+        val cards = set.take(cardCount)
+        val hiddenPos = (index + level) % cards.size
+        val correctGem = cards[hiddenPos]
+        val displayTokens = cards.mapIndexed { idx, item ->
+            if (idx == hiddenPos) "📦❓" else item
+        }
+        return MiniGameQuestion(
+            index = index,
+            total = total,
+            prompt = localizedMemoryPrompt(lang, hiddenPos + 1, cards),
+            visualEquationOrPattern = displayTokens.joinToString("   "),
+            visualTokens = cards,
+            options = set,
+            optionIcons = set,
+            correctIndex = set.indexOf(correctGem),
+            hintText = "${cards.joinToString(" • ")} → $correctGem",
+            sceneKind = VisualSceneKind.MEMORY_CHEST,
+            polygonSides = hiddenPos
+        )
+    }
+
+    private fun buildCosmicBalanceQuestion(
+        index: Int,
+        total: Int,
+        ageGroup: AgeGroupConfig,
+        level: Int,
+        lang: String
+    ): MiniGameQuestion {
+        val rightKnown = when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> (index % 3) + 1
+            AgeGroupConfig.AGES_7_9 -> (index % 4) + 2
+            AgeGroupConfig.AGES_10_13 -> (index % 5) + 4
+        }
+        val missingWeight = when (ageGroup) {
+            AgeGroupConfig.AGES_4_6 -> (level % 3) + 1
+            AgeGroupConfig.AGES_7_9 -> (level % 4) + 2
+            AgeGroupConfig.AGES_10_13 -> (level % 6) + 3
+        }
+        val leftTotal = rightKnown + missingWeight
+        val options = makeNumericOptions(missingWeight, minVal = 1)
+        return MiniGameQuestion(
+            index = index,
+            total = total,
+            prompt = localizedBalancePrompt(lang, leftTotal, rightKnown),
+            visualEquationOrPattern = "⚖️ [ $leftTotal ⭐ ]  =  [ $rightKnown ⭐ + ❓ ]",
+            visualTokens = listOf("⚖️ $leftTotal", "🟰", "$rightKnown + ❓"),
+            options = options.map { it.toString() },
+            optionIcons = options.map { "⭐×$it" },
+            correctIndex = options.indexOf(missingWeight),
+            hintText = "$leftTotal − $rightKnown = $missingWeight",
+            sceneKind = VisualSceneKind.BALANCE_BEAM,
+            balanceLeftWeight = leftTotal,
+            balanceRightKnownWeight = rightKnown
+        )
+    }
+
+    private fun makeNumericOptions(correct: Int, minVal: Int): List<Int> {
+        val candidates = linkedSetOf(correct)
+        val offsets = listOf(1, -1, 2, -2, 3, 4)
+        for (offset in offsets) {
+            val candidate = (correct + offset).coerceAtLeast(minVal)
+            candidates.add(candidate)
+            if (candidates.size == 4) break
+        }
+        var extra = correct + 5
+        while (candidates.size < 4) {
+            candidates.add(extra++)
+        }
+        return candidates.toList().sorted()
+    }
+
+    private fun localizedMathPrompt(lang: String, isAddition: Boolean, emoji: String): String = when (lang) {
+        "en" -> if (isAddition) "Count & tap the $emoji friends! How many altogether?" else "How many $emoji are left on the island?"
+        "es" -> if (isAddition) "¡Cuenta y toca los $emoji! ¿Cuántos hay en total?" else "¿Cuántos $emoji quedan en la isla?"
+        "fr" -> if (isAddition) "Compte et touche les $emoji ! Combien au total ?" else "Combien de $emoji restent sur l'île ?"
+        "hi" -> if (isAddition) "$emoji को टैप करके गिनें! कुल कितने हैं?" else "द्वीप पर कितने $emoji बचे हैं?"
+        else -> if (isAddition) "Ketuk & hitung $emoji di bawah! Berapa jumlah semuanya?" else "Berapa sisa $emoji yang ada di pulau?"
+    }
+
+    private fun localizedOrderOfOpsPrompt(lang: String): String = when (lang) {
+        "en" -> "Solve the Safari Crystal equation!"
+        "es" -> "¡Resuelve la ecuación de cristal!"
+        "fr" -> "Résous l'équation magique !"
+        "hi" -> "सफारी समीकरण हल करें!"
+        else -> "Selesaikan persamaan Kristal Safari ini!"
+    }
+
+    private fun localizedHintCount(lang: String, a: Int, b: Int, answer: Int): String = when (lang) {
+        "en" -> "Tap each icon to count: $a + $b = $answer!"
+        "es" -> "Toca cada icono: $a + $b = $answer"
+        "fr" -> "Touche chaque icône : $a + $b = $answer"
+        "hi" -> "प्रत्येक चित्र को टैप करें: $a + $b = $answer"
+        else -> "Ketuk gambarnya satu per satu: $a + $b = $answer!"
+    }
+
+    private fun localizedHintStartFrom(lang: String, a: Int, b: Int, isAdd: Boolean, ans: Int): String = when (lang) {
+        "en" -> if (isAdd) "Start at $a and count up $b steps → $ans" else "Start at $a and count back $b steps → $ans"
+        "es" -> if (isAdd) "Empieza en $a y suma $b → $ans" else "Empieza en $a y resta $b → $ans"
+        "fr" -> if (isAdd) "Commence à $a et ajoute $b → $ans" else "Commence à $a et enlève $b → $ans"
+        "hi" -> if (isAdd) "$a में $b जोड़ें → $ans" else "$a में से $b घटाएं → $ans"
+        else -> if (isAdd) "Mulai dari $a lalu maju $b langkah → $ans" else "Mulai dari $a lalu mundur $b langkah → $ans"
+    }
+
+    private fun localizedPatternPrompt(lang: String): String = when (lang) {
+        "en" -> "Which crystal icon completes the magic portal?"
+        "es" -> "¿Qué cristal completa el portal mágico?"
+        "fr" -> "Quel cristal complète le portail magique ?"
+        "hi" -> "जादुई पोर्टल को कौन सा चिन्ह पूरा करता है?"
+        else -> "Simbol kristal mana yang melengkapi portal ajaib ini?"
+    }
+
+    private fun localizedBridgePrompt(lang: String, step: Int): String = when (lang) {
+        "en" -> "Hop by +$step across the bridge! Find the missing stone:"
+        "es" -> "¡Salta de +$step en +$step por el puente! Encuentra la piedra:"
+        "fr" -> "Saute de +$step en +$step sur le pont ! Trouve la pierre :"
+        "hi" -> "+$step के अंतर से पुल पार करें! सही पत्थर चुनें:"
+        else -> "Lompat +$step di setiap batu jembatan! Berapa angka batu yang hilang?"
+    }
+
+    private fun localizedLogicPairPrompt(lang: String, item: String): String = when (lang) {
+        "en" -> "Which favorite treasure belongs with $item?"
+        "es" -> "¿Qué pareja le corresponde a $item?"
+        "fr" -> "Quel élément va avec $item ?"
+        "hi" -> "$item के साथ कौन सी चीज़ मेल खाती है?"
+        else -> "Pasangan mana yang paling cocok untuk $item?"
+    }
+
+    private fun localizedMatrixRowPrompt(lang: String): String = when (lang) {
+        "en" -> "Every row needs 🔴, 🟦, and 🔺. Which shape is missing?"
+        "es" -> "Cada fila necesita 🔴, 🟦 y 🔺. ¿Cuál falta?"
+        "fr" -> "Chaque ligne a 🔴, 🟦 et 🔺. Laquelle manque ?"
+        "hi" -> "हर पंक्ति में 🔴, 🟦 और 🔺 हैं। कौन सा गायब है?"
+        else -> "Setiap baris memiliki 🔴, 🟦, dan 🔺. Bentuk mana yang belum ada?"
+    }
+
+    private fun localizedMatrixGridPrompt(lang: String): String = when (lang) {
+        "en" -> "Find the secret multiplier rule to unlock the vault!"
+        "es" -> "¡Descubre la regla secreta para abrir el cofre!"
+        "fr" -> "Trouve la règle secrète pour ouvrir le coffre !"
+        "hi" -> "तिजोरी खोलने के लिए गुप्त नियम खोजें!"
+        else -> "Temukan pola perkalian rahasia untuk membuka peti!"
+    }
+
+    private fun localizedShapePrompt(lang: String, shapeName: String): String = when (lang) {
+        "en" -> "Count the glowing corners on the $shapeName! How many sides does it have?"
+        "es" -> "¡Cuenta las esquinas brillantes del $shapeName! ¿Cuántos lados tiene?"
+        "fr" -> "Compte les sommets lumineux du $shapeName ! Combien de côtés ?"
+        "hi" -> "$shapeName के चमकते कोनों को गिनें! इसमें कितनी भुजाएँ हैं?"
+        else -> "Hitung titik sudut bercahaya pada $shapeName! Berapa jumlah sisinya?"
+    }
+
+    private fun localizedShapeHint(lang: String, shapeName: String, sides: Int): String = when (lang) {
+        "en" -> "A $shapeName has $sides glowing sides and $sides corners!"
+        "es" -> "Un $shapeName tiene $sides lados."
+        "fr" -> "Un $shapeName possède $sides côtés."
+        "hi" -> "$shapeName में $sides भुजाएँ होती हैं।"
+        else -> "Bangun $shapeName memiliki $sides sisi dan $sides titik sudut!"
+    }
+
+    private fun localizedPerimeterPrompt(lang: String, shapeName: String, sides: Int, len: Int): String = when (lang) {
+        "en" -> "Each of the $sides sides of this $shapeName is $len units. Total perimeter?"
+        "es" -> "Cada uno de los $sides lados del $shapeName mide $len. ¿Perímetro total?"
+        "fr" -> "Chacun des $sides côtés du $shapeName mesure $len. Périmètre total ?"
+        "hi" -> "$shapeName की $sides भुजाओं में प्रत्येक $len है। कुल परिमाप?"
+        else -> "Setiap dari $sides sisi $shapeName panjangnya $len. Berapa keliling totalnya?"
+    }
+
+    private fun localizedMemoryPrompt(lang: String, pos: Int, cards: List<String>): String = when (lang) {
+        "en" -> "Treasure Chest #$pos is hiding a gem from [${cards.joinToString(" ")}]! Which one is in slot #$pos?"
+        "es" -> "¡El cofre #$pos esconde un tesoro de [${cards.joinToString(" ")}]! ¿Cuál está en #$pos?"
+        "fr" -> "Le coffre #$pos cache un trésor de [${cards.joinToString(" ")}] ! Lequel est en #$pos ?"
+        "hi" -> "तिजोरी #$pos में [${cards.joinToString(" ")}] में से कौन सा रत्न छिपा है?"
+        else -> "Peti Harta ke-$pos menyimpan simbol dari [${cards.joinToString(" ")}]! Manakah isi peti ke-$pos?"
+    }
+
+    private fun localizedBalancePrompt(lang: String, leftTotal: Int, rightKnown: Int): String = when (lang) {
+        "en" -> "Balance the Cosmic Scale! Left has $leftTotal ⭐, Right has $rightKnown ⭐. How many more ⭐ needed?"
+        "es" -> "¡Equilibra la balanza! Izquierda: $leftTotal ⭐, Derecha: $rightKnown ⭐. ¿Cuántas faltan?"
+        "fr" -> "Équilibre la balance ! Gauche : $leftTotal ⭐, Droite : $rightKnown ⭐. Combien manque-t-il ?"
+        "hi" -> "तराजू संतुलित करें! बाएं $leftTotal ⭐, दाएं $rightKnown ⭐ हैं। और कितने चाहिए?"
+        else -> "Seimbangkan Timbangan Kosmik! Kiri = $leftTotal ⭐, Kanan = $rightKnown ⭐. Berapa ⭐ lagi agar seimbang?"
     }
 }

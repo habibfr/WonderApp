@@ -20,13 +20,13 @@
         },
         "selectedCharacter": {
           "type": "string",
-          "enum": ["sparky", "luna", "robobit", "sunny"],
+          "enum": ["sparky", "luna", "robobit", "sunny", "komodo"],
           "description": "Interactive buddy character ID."
         },
         "languageCode": {
           "type": "string",
-          "enum": ["en", "es", "fr", "hi"],
-          "description": "Multilingual UI and classroom learning language code."
+          "enum": ["id", "en", "es", "fr", "hi"],
+          "description": "Multilingual UI and classroom learning language code (default 'id')."
         },
         "darkMode": {
           "type": "boolean",
@@ -100,7 +100,15 @@
         },
         "gameType": {
           "type": "string",
-          "enum": ["math_safari", "pattern_portal", "number_bridge", "logic_matrix"],
+          "enum": [
+            "math_safari",
+            "pattern_portal",
+            "number_bridge",
+            "logic_matrix",
+            "shape_galaxy",
+            "memory_treasure",
+            "cosmic_balance"
+          ],
           "description": "Identifier of the educational mini-game played."
         },
         "ageGroup": {

@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,304 +20,303 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.data.AgeBracket
+import androidx.compose.ui.unit.sp
+import com.example.data.AgeGroupConfig
 import com.example.data.BuddyCharacter
-import com.example.data.ChildProfile
-import com.example.data.LocalizedUiStrings
+import com.example.data.BuddyReaction
+import com.example.data.GamePlayMode
 import com.example.data.MiniGameType
 import com.example.data.WonderQuestStrings
+import com.example.ui.WonderQuestUiState
 import com.example.ui.components.AnimatedBuddyCanvas
+import com.example.ui.components.AnimatedIslandPanoramaCanvas
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun IslandHomeScreen(
-    profile: ChildProfile,
-    strings: LocalizedUiStrings,
-    isOnline: Boolean,
-    onSelectAgeBracket: (AgeBracket) -> Unit,
+    uiState: WonderQuestUiState,
+    onSelectAgeGroup: (AgeGroupConfig) -> Unit,
+    onSelectPlayMode: (GamePlayMode) -> Unit,
     onSelectLanguage: (String) -> Unit,
-    onToggleDarkMode: () -> Unit,
-    onStartMiniGame: (MiniGameType, Int) -> Unit,
-    onNavigateToBuddies: () -> Unit,
+    onToggleDarkMode: (Boolean) -> Unit,
+    onBuddyTap: (BuddyReaction) -> Unit,
+    onStartMiniGame: (MiniGameType) -> Unit,
+    onRequestCloudSignIn: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val activeBuddy = BuddyCharacter.fromId(profile.selectedCharacter)
-    val activeAgeBracket = AgeBracket.fromCode(profile.ageGroup)
-    var buddyTapCount by remember { mutableIntStateOf(1) }
-    val nextSuggestedLevel = ((profile.completedLevelsCount % 10L) + 1L).toInt()
+    val strings = uiState.strings
+    val profile = uiState.profile
+    val lang = profile.languageCode
+    val buddy = BuddyCharacter.fromId(profile.selectedCharacter)
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 270.dp),
         modifier = modifier
             .fillMaxSize()
-            .testTag("island_home_screen"),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .testTag("island_home_grid"),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Top Header Bar with Cloud/Offline Status, Language Pills, and Dark Mode Toggle
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+        // 1. Cloud Sync / Guest Device Storage Banner + Language & Theme Controls
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                StorageAndSyncTopBanner(
+                    isCloudConnected = uiState.isCloudConnected,
+                    guestModeBanner = strings.guestModeBanner,
+                    syncedBanner = strings.syncedWithCloudBanner,
+                    syncNowLabel = strings.syncNowButton,
+                    onRequestCloudSignIn = onRequestCloudSignIn
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            text = "WonderQuest",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "👋 ${profile.childName}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Surface(
-                            color = if (isOnline) {
-                                MaterialTheme.colorScheme.tertiaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            },
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.testTag("sync_status_badge")
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = if (isOnline) Icons.Filled.CloudDone else Icons.Filled.CloudOff,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (isOnline) {
-                                        MaterialTheme.colorScheme.onTertiaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isOnline) strings.cloudSyncedStatus else strings.offlineReadyStatus,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (isOnline) {
-                                        MaterialTheme.colorScheme.onTertiaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    }
-                                )
-                            }
-                        }
-
-                        IconButton(
-                            onClick = onToggleDarkMode,
-                            modifier = Modifier.testTag("home_dark_mode_button")
-                        ) {
-                            Icon(
-                                imageVector = if (profile.darkMode) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                                contentDescription = strings.darkModeLabel,
-                                tint = MaterialTheme.colorScheme.primary
+                        WonderQuestStrings.supportedLanguages.forEach { (code, label) ->
+                            FilterChip(
+                                selected = lang == code,
+                                onClick = { onSelectLanguage(code) },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (lang == code) FontWeight.ExtraBold else FontWeight.Medium
+                                    )
+                                },
+                                modifier = Modifier.testTag("lang_chip_$code")
                             )
                         }
                     }
-                }
 
-                // Classroom Multilingual Bar
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    WonderQuestStrings.supportedLanguages.forEach { (code, name) ->
-                        FilterChip(
-                            selected = profile.languageCode == code,
-                            onClick = { onSelectLanguage(code) },
-                            label = { Text(name) },
-                            modifier = Modifier.testTag("lang_chip_$code")
+                    IconButton(
+                        onClick = { onToggleDarkMode(!profile.darkMode) },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .testTag("toggle_dark_mode_button")
+                    ) {
+                        Icon(
+                            imageVector = if (profile.darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = strings.darkModeLabel,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
             }
         }
 
-        // 2. Interactive Buddy Hero Card
-        item {
+        // 2. Living Animated Panorama Hero Card with Interactive Buddy & Quick Props
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Card(
+                shape = RoundedCornerShape(30.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 640.dp)
-                    .testTag("hero_buddy_card"),
-                shape = MaterialTheme.shapes.extraLarge,
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .testTag("hero_buddy_card")
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(activeBuddy.primaryColorHex).copy(alpha = 0.20f),
-                                    MaterialTheme.colorScheme.surface,
-                                    Color(activeBuddy.accentColorHex).copy(alpha = 0.18f)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // Animated Sky, Rainbow Bridge, Clouds, Tropical Hills & Waves
+                    AnimatedIslandPanoramaCanvas(
+                        isDarkMode = profile.darkMode,
+                        modifier = Modifier
+                            .matchParentSize()
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                                    )
                                 )
                             )
-                        )
-                        .padding(20.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(132.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .clickable {
+                                        val nextReaction = when (uiState.buddyReaction) {
+                                            BuddyReaction.IDLE -> BuddyReaction.DANCING
+                                            BuddyReaction.DANCING -> BuddyReaction.SPARKLE
+                                            BuddyReaction.SPARKLE -> BuddyReaction.EATING_TREAT
+                                            else -> BuddyReaction.HIGH_FIVE
+                                        }
+                                        onBuddyTap(nextReaction)
+                                    }
+                                    .testTag("island_buddy_canvas_box"),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Surface(
-                                    color = Color(activeBuddy.primaryColorHex).copy(alpha = 0.18f),
-                                    shape = RoundedCornerShape(50),
-                                    modifier = Modifier.clickable { onNavigateToBuddies() }
-                                ) {
-                                    Text(
-                                        text = "✨ ${activeBuddy.displayName(profile.languageCode)} • ${activeBuddy.role(profile.languageCode)}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                }
-
-                                AnimatedContent(
-                                    targetState = buddyTapCount,
-                                    label = "buddy_speech"
-                                ) { count ->
-                                    val cheerText = if (count % 2 == 1) {
-                                        activeBuddy.cheer(profile.languageCode)
-                                    } else {
-                                        strings.tapBuddyHint
-                                    }
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
-                                        shape = MaterialTheme.shapes.medium,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "💬 \"$cheerText\"",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
-                                }
+                                AnimatedBuddyCanvas(
+                                    character = buddy,
+                                    reaction = uiState.buddyReaction,
+                                    modifier = Modifier.size(126.dp)
+                                )
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${buddy.emoji} ${buddy.localizedName(lang)} & ${profile.childName}",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = strings.tapBuddyHint,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                            AnimatedBuddyCanvas(
-                                character = activeBuddy,
-                                interactionTriggerCount = buddyTapCount,
-                                onBuddyTapped = { buddyTapCount++ },
-                                canvasSize = 135.dp,
-                                testTagName = "home_buddy_canvas"
+                                // Buddy Happiness & Energy meter
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = null,
+                                        tint = Color(0xFFE91E63),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    LinearProgressIndicator(
+                                        progress = { (uiState.buddyHappiness / 100f).coerceIn(0.1f, 1f) },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(50)),
+                                        color = Color(0xFFE91E63),
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    Text(
+                                        text = "${uiState.buddyHappiness}%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Interactive Buddy Action Buttons right on the Island!
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            InteractiveReactionChip(
+                                emoji = "🍓",
+                                label = strings.feedTreatButton,
+                                onClick = { onBuddyTap(BuddyReaction.EATING_TREAT) },
+                                tag = "home_feed_treat_chip"
+                            )
+                            InteractiveReactionChip(
+                                emoji = "🪄",
+                                label = strings.magicWandButton,
+                                onClick = { onBuddyTap(BuddyReaction.MAGIC_WAND) },
+                                tag = "home_magic_wand_chip"
+                            )
+                            InteractiveReactionChip(
+                                emoji = "💃",
+                                label = strings.triggerDanceButton,
+                                onClick = { onBuddyTap(BuddyReaction.DANCING) },
+                                tag = "home_dance_chip"
+                            )
+                            InteractiveReactionChip(
+                                emoji = "🙌",
+                                label = strings.triggerHighFiveButton,
+                                onClick = { onBuddyTap(BuddyReaction.HIGH_FIVE) },
+                                tag = "home_high_five_chip"
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Gamified Stats Strip (Stars, Completed Levels, Streak, Unlocked Badges)
+                        // Stats Row with Icons
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            StatPillCard(
-                                icon = {
-                                    Icon(
-                                        Icons.Filled.Star,
-                                        contentDescription = null,
-                                        tint = Color(0xFFF59E0B),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                },
+                            StatPill(
+                                icon = Icons.Default.Star,
                                 value = "${profile.totalStars}",
                                 label = strings.starsLabel,
-                                modifier = Modifier.weight(1f)
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.weight(1f).testTag("stat_stars_pill")
                             )
-                            StatPillCard(
-                                icon = {
-                                    Icon(
-                                        Icons.Filled.EmojiEvents,
-                                        contentDescription = null,
-                                        tint = Color(0xFF10B981),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                },
+                            StatPill(
+                                icon = Icons.Default.EmojiEvents,
                                 value = "${profile.completedLevelsCount}",
                                 label = strings.levelsLabel,
-                                modifier = Modifier.weight(1f)
+                                tint = Color(0xFF26A69A),
+                                modifier = Modifier.weight(1f).testTag("stat_levels_pill")
                             )
-                            StatPillCard(
-                                icon = {
-                                    Icon(
-                                        Icons.Filled.LocalFireDepartment,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFF6B35),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                },
+                            StatPill(
+                                icon = Icons.Default.LocalFireDepartment,
                                 value = "${profile.streakDays}d",
                                 label = strings.streakLabel,
-                                modifier = Modifier.weight(1f)
+                                tint = Color(0xFFFF7043),
+                                modifier = Modifier.weight(1f).testTag("stat_streak_pill")
                             )
                         }
                     }
@@ -322,117 +324,283 @@ fun IslandHomeScreen(
             }
         }
 
-        // 3. Age Bracket Difficulty Selector (4-6, 7-9, 10-13)
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+        // 3. Step 1: Age Group Selector (4-6, 7-9, 10-13)
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = strings.chooseAgeGroup,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    AgeBracket.entries.forEach { bracket ->
-                        val isSelected = bracket == activeAgeBracket
+                    AgeGroupConfig.entries.forEach { group ->
+                        val selected = profile.ageGroup == group.code
                         FilterChip(
-                            selected = isSelected,
-                            onClick = { onSelectAgeBracket(bracket) },
+                            selected = selected,
+                            onClick = { onSelectAgeGroup(group) },
                             label = {
                                 Text(
-                                    text = bracket.label(profile.languageCode),
-                                    style = MaterialTheme.typography.labelLarge
+                                    text = "${group.iconEmoji} ${group.localizedTitle(lang)}",
+                                    fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            modifier = Modifier.testTag("age_chip_${bracket.code}")
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .testTag("age_group_chip_${group.code}")
                         )
                     }
                 }
             }
         }
 
-        // 4. Educational Mini-Games Section Header
-        item {
+        // 4. Step 2: Interactive Game Mode Selector (Adventure, Star Blitz, Zen Practice, Daily Quest)
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = strings.choosePlayMode,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    GamePlayMode.entries.forEach { mode ->
+                        val isSelected = uiState.selectedPlayMode == mode
+                        val accent = Color(mode.colorHex)
+                        val scale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.03f else 1f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                            label = "mode_scale_${mode.id}"
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = if (isSelected) accent else accent.copy(alpha = 0.14f),
+                            tonalElevation = if (isSelected) 6.dp else 0.dp,
+                            modifier = Modifier
+                                .weight(1f)
+                                .scale(scale)
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onSelectPlayMode(mode) }
+                                .testTag("play_mode_${mode.id}")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(text = mode.emoji, fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = mode.localizedTitle(lang),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (mode.bonusStars > 0) {
+                                    Text(
+                                        text = "+${mode.bonusStars} ⭐",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isSelected) Color.White.copy(alpha = 0.92f) else accent,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Step 3: Section Title for 7 Interactive Mini-Games
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = strings.chooseMiniGame,
                     style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Text(
-                    text = "${strings.mathPointsLabel}: ${profile.mathScore} • ${strings.logicPointsLabel}: ${profile.logicScore}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color(uiState.selectedPlayMode.colorHex).copy(alpha = 0.18f)
+                ) {
+                    Text(
+                        text = "${uiState.selectedPlayMode.emoji} ${uiState.selectedPlayMode.localizedTitle(lang)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(uiState.selectedPlayMode.colorHex),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
 
-        // 5. Mini-Game Cards
-        items(MiniGameType.entries) { gameType ->
+        // 6. All 7 Mini-Game Quest Cards
+        items(MiniGameType.entries, key = { it.id }) { gameType ->
             MiniGameQuestCard(
                 gameType = gameType,
-                languageCode = profile.languageCode,
-                strings = strings,
-                suggestedLevel = nextSuggestedLevel,
-                onPlayClicked = { onStartMiniGame(gameType, nextSuggestedLevel) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp)
+                languageCode = lang,
+                playButtonLabel = strings.playNowButton,
+                levelPrefix = strings.levelPrefix,
+                currentLevel = (profile.completedLevelsCount.toInt() % 12) + 1,
+                playMode = uiState.selectedPlayMode,
+                onStart = { onStartMiniGame(gameType) }
             )
         }
     }
 }
 
 @Composable
-private fun StatPillCard(
-    icon: @Composable () -> Unit,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier
+private fun StorageAndSyncTopBanner(
+    isCloudConnected: Boolean,
+    guestModeBanner: String,
+    syncedBanner: String,
+    syncNowLabel: String,
+    onRequestCloudSignIn: () -> Unit
 ) {
+    val bgColor by animateColorAsState(
+        targetValue = if (isCloudConnected) Color(0xFF00897B).copy(alpha = 0.15f)
+        else Color(0xFFFF8F00).copy(alpha = 0.16f),
+        label = "sync_banner_bg"
+    )
+    val accentColor = if (isCloudConnected) Color(0xFF00796B) else Color(0xFFE65100)
+
     Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        tonalElevation = 2.dp
+        shape = RoundedCornerShape(18.dp),
+        color = bgColor,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("storage_sync_status_banner")
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.weight(1f)
             ) {
-                icon()
+                Icon(
+                    imageVector = if (isCloudConnected) Icons.Default.CloudDone else Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleLarge,
+                    text = if (isCloudConnected) syncedBanner else guestModeBanner,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            if (!isCloudConnected) {
+                FilledTonalButton(
+                    onClick = onRequestCloudSignIn,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .height(36.dp)
+                        .testTag("sync_cloud_banner_button")
+                ) {
+                    Text(
+                        text = syncNowLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InteractiveReactionChip(
+    emoji: String,
+    label: String,
+    onClick: () -> Unit,
+    tag: String
+) {
+    AssistChip(
+        onClick = onClick,
+        leadingIcon = { Text(text = emoji, fontSize = 16.sp) },
+        label = {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Bold
             )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        ),
+        shape = RoundedCornerShape(50),
+        modifier = Modifier.testTag(tag)
+    )
+}
+
+@Composable
+private fun StatPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tint,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Column {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -441,103 +609,112 @@ private fun StatPillCard(
 private fun MiniGameQuestCard(
     gameType: MiniGameType,
     languageCode: String,
-    strings: LocalizedUiStrings,
-    suggestedLevel: Int,
-    onPlayClicked: () -> Unit,
-    modifier: Modifier = Modifier
+    playButtonLabel: String,
+    levelPrefix: String,
+    currentLevel: Int,
+    playMode: GamePlayMode,
+    onStart: () -> Unit
 ) {
-    val accent = Color(gameType.colorHex)
-    val iconEmoji = when (gameType) {
-        MiniGameType.MATH_SAFARI -> "🦁"
-        MiniGameType.PATTERN_PORTAL -> "🔮"
-        MiniGameType.NUMBER_BRIDGE -> "🌉"
-        MiniGameType.LOGIC_MATRIX -> "🧩"
-    }
+    val accent = Color(gameType.accentColorHex)
 
-    Card(
-        modifier = modifier
-            .testTag("minigame_card_${gameType.id}")
-            .clickable { onPlayClicked() },
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
+    ElevatedCard(
+        onClick = onStart,
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("minigame_card_${gameType.id}")
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = iconEmoji,
-                    style = MaterialTheme.typography.headlineLarge
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = gameType.title(languageCode),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Surface(
-                        color = accent.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text = "${strings.levelPrefix} $suggestedLevel",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = accent,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.20f),
+                            accent.copy(alpha = 0.05f),
+                            Color.Transparent
                         )
+                    )
+                )
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = accent.copy(alpha = 0.24f),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = gameType.emoji, fontSize = 30.sp)
                     }
                 }
-                Text(
-                    text = gameType.description(languageCode),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = accent.copy(alpha = 0.18f)
+                    ) {
+                        Text(
+                            text = "$levelPrefix $currentLevel • ${playMode.questionCount}Q",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = accent,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "⭐⭐⭐" + if (playMode.bonusStars > 0) " +${playMode.bonusStars}" else "",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = gameType.localizedTitle(languageCode),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = gameType.localizedSubtitle(languageCode),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                minLines = 2
+            )
 
             Button(
-                onClick = onPlayClicked,
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(containerColor = accent),
+                onClick = onStart,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accent,
+                    contentColor = Color.White
+                ),
                 modifier = Modifier
+                    .fillMaxWidth()
                     .height(48.dp)
                     .testTag("play_button_${gameType.id}")
             ) {
                 Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = playButtonLabel
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = strings.playNowButton,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White
+                    text = "${playMode.emoji} $playButtonLabel",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }

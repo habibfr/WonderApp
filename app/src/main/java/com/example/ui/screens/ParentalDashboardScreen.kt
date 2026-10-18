@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,14 +18,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -47,300 +53,224 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.data.AgeBracket
-import com.example.data.ChildProfile
 import com.example.data.GameSessionRecord
-import com.example.data.LocalizedUiStrings
 import com.example.data.MiniGameType
 import com.example.data.WonderQuestStrings
+import com.example.ui.WonderQuestUiState
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ParentalDashboardScreen(
-    profile: ChildProfile,
-    sessions: List<GameSessionRecord>,
-    strings: LocalizedUiStrings,
-    onSaveSettings: (childName: String, ageGroup: String, languageCode: String, darkMode: Boolean, parentPin: String) -> Unit,
+    uiState: WonderQuestUiState,
+    onUnlockWithPin: (String) -> Unit,
+    onSaveSettings: (String, String) -> Unit,
+    onSelectLanguage: (String) -> Unit,
+    onToggleDarkMode: (Boolean) -> Unit,
     onResetProgress: () -> Unit,
     onSignOut: () -> Unit,
+    onLinkCloudAccount: () -> Unit = {},
+    onBackToIsland: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isUnlocked by rememberSaveable { mutableStateOf(false) }
-    var pinInput by remember { mutableStateOf("") }
-    var pinError by remember { mutableStateOf(false) }
+    BackHandler(onBack = onBackToIsland)
 
-    if (!isUnlocked) {
-        // Secure Parental PIN Gate
-        Column(
+    val strings = uiState.strings
+    val profile = uiState.profile
+
+    if (!uiState.isParentUnlocked) {
+        ParentalPinGate(
+            strings = strings,
+            hasError = uiState.parentPinError,
+            onUnlock = onUnlockWithPin,
             modifier = modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .testTag("parent_pin_gate_screen"),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 480.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Shield,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = strings.parentGateTitle,
-                        style = MaterialTheme.typography.headlineMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = strings.parentGateSubtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text = strings.defaultPinHint,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    OutlinedTextField(
-                        value = pinInput,
-                        onValueChange = {
-                            pinInput = it.filter { ch -> ch.isDigit() }.take(4)
-                            pinError = false
-                        },
-                        label = { Text(strings.enterPinLabel) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        isError = pinError,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("parent_pin_input")
-                    )
-
-                    if (pinError) {
-                        Text(
-                            text = strings.wrongPinError,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(top = 6.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Button(
-                        onClick = {
-                            if (pinInput == profile.parentPin || pinInput == "1234") {
-                                isUnlocked = true
-                                pinError = false
-                            } else {
-                                pinError = true
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("unlock_parent_dashboard_button"),
-                        shape = MaterialTheme.shapes.large
-                    ) {
-                        Icon(Icons.Filled.LockOpen, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = strings.unlockDashboardButton,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
-            }
-        }
+        )
         return
     }
 
-    // Unlocked Parental Progress & Settings Dashboard
-    var editName by remember(profile.childName) { mutableStateOf(profile.childName) }
-    var editAgeGroup by remember(profile.ageGroup) { mutableStateOf(profile.ageGroup) }
-    var editLang by remember(profile.languageCode) { mutableStateOf(profile.languageCode) }
-    var editDark by remember(profile.darkMode) { mutableStateOf(profile.darkMode) }
-    var editPin by remember(profile.parentPin) { mutableStateOf(profile.parentPin) }
-    var savedConfirmation by remember { mutableStateOf(false) }
-
-    val totalQuestionsAnswered = sessions.sumOf { it.totalQuestions }.coerceAtLeast(1L)
-    val totalCorrectAnswered = sessions.sumOf { it.correctAnswers }
-    val accuracyPercent = if (sessions.isEmpty()) 100 else ((totalCorrectAnswered * 100) / totalQuestionsAnswered).toInt()
-    val totalMinutesPlayed = (sessions.sumOf { it.durationSeconds } / 60L).coerceAtLeast(if (sessions.isNotEmpty()) 1L else 0L)
+    var childNameInput by rememberSaveable(profile.childName) { mutableStateOf(profile.childName) }
+    var pinInput by rememberSaveable(profile.parentPin) { mutableStateOf(profile.parentPin) }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .testTag("parent_dashboard_unlocked"),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+            .testTag("parental_dashboard_list"),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = strings.parentDashboardTitle,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                OutlinedButton(
-                    onClick = { isUnlocked = false },
-                    modifier = Modifier.testTag("lock_parent_dashboard_button")
-                ) {
-                    Icon(Icons.Filled.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Lock")
-                }
-            }
-        }
-
-        // Analytics Overview Card
+        // 1. Cloud Sync & Local Device Storage Status Banner
         item {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (uiState.isCloudConnected) MaterialTheme.colorScheme.secondaryContainer
+                    else MaterialTheme.colorScheme.tertiaryContainer
+                )
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.isCloudConnected) Icons.Default.CloudDone else Icons.Default.SdStorage,
+                            contentDescription = null,
+                            tint = if (uiState.isCloudConnected) Color(0xFF00796B) else Color(0xFFE65100),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.parentDashboardTitle,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = if (uiState.isCloudConnected) {
+                                    "${strings.cloudSyncedStatus} • ${strings.offlineReadyStatus}"
+                                } else {
+                                    strings.guestSavedOnDeviceStatus
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+
+                    if (!uiState.isCloudConnected) {
+                        Button(
+                            onClick = onLinkCloudAccount,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("link_cloud_account_button")
+                        ) {
+                            Icon(imageVector = Icons.Default.CloudSync, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.linkCloudAccountButton,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Visual Analytics: Math Score, Logic Score, Total Stars & Levels
+        item {
+            Card(
+                modifier = Modifier
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        AnalyticsMetricBox(
+                        DashboardMetricBox(
+                            title = strings.mathPointsLabel,
+                            value = "${profile.mathScore}",
+                            accent = Color(0xFFFF7043),
+                            modifier = Modifier.weight(1f).testTag("dashboard_math_score")
+                        )
+                        DashboardMetricBox(
+                            title = strings.logicPointsLabel,
+                            value = "${profile.logicScore}",
+                            accent = Color(0xFF7E57C2),
+                            modifier = Modifier.weight(1f).testTag("dashboard_logic_score")
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        DashboardMetricBox(
                             title = strings.starsLabel,
-                            value = "${profile.totalStars} ★",
-                            color = Color(0xFFF59E0B),
+                            value = "⭐ ${profile.totalStars}",
+                            accent = Color(0xFFFFB300),
                             modifier = Modifier.weight(1f)
                         )
-                        AnalyticsMetricBox(
+                        DashboardMetricBox(
                             title = strings.levelsLabel,
-                            value = "${profile.completedLevelsCount}",
-                            color = Color(0xFF10B981),
-                            modifier = Modifier.weight(1f)
-                        )
-                        AnalyticsMetricBox(
-                            title = "Accuracy",
-                            value = "$accuracyPercent%",
-                            color = Color(0xFF4F46E5),
-                            modifier = Modifier.weight(1f)
-                        )
-                        AnalyticsMetricBox(
-                            title = "Time",
-                            value = "${totalMinutesPlayed}m",
-                            color = Color(0xFFEC4899),
+                            value = "🏆 ${profile.completedLevelsCount}",
+                            accent = Color(0xFF26A69A),
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // Math vs Logic Mastery Progress Bars
+                    // Visual Skill Progress Bars
                     val totalPoints = (profile.mathScore + profile.logicScore).coerceAtLeast(1L)
-                    val mathRatio = profile.mathScore.toFloat() / totalPoints.toFloat()
-
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "🧮 ${strings.mathPointsLabel}: ${profile.mathScore}",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color(0xFF10B981)
-                            )
-                            Text(
-                                text = "🔮 ${strings.logicPointsLabel}: ${profile.logicScore}",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color(0xFF8B5CF6)
-                            )
-                        }
+                    val mathRatio = (profile.mathScore.toFloat() / totalPoints.toFloat()).coerceIn(0.15f, 0.85f)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "🔢 ${strings.mathPointsLabel} vs 🧩 ${strings.logicPointsLabel}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                         LinearProgressIndicator(
-                            progress = { if (profile.mathScore == 0L && profile.logicScore == 0L) 0.5f else mathRatio },
+                            progress = { mathRatio },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(10.dp),
-                            color = Color(0xFF10B981),
-                            trackColor = Color(0xFF8B5CF6).copy(alpha = 0.35f)
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(50)),
+                            color = Color(0xFFFF7043),
+                            trackColor = Color(0xFF7E57C2)
                         )
                     }
                 }
             }
         }
 
-        // Child Explorer & Classroom Settings Card
+        // 3. Profile & Classroom Preferences Card
         item {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
                         text = strings.childSettingsSection,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold
                     )
 
                     OutlinedTextField(
-                        value = editName,
-                        onValueChange = {
-                            editName = it.take(40)
-                            savedConfirmation = false
-                        },
+                        value = childNameInput,
+                        onValueChange = { childNameInput = it.take(40) },
                         label = { Text(strings.childNameLabel) },
                         singleLine = true,
                         modifier = Modifier
@@ -349,52 +279,17 @@ fun ParentalDashboardScreen(
                     )
 
                     OutlinedTextField(
-                        value = editPin,
-                        onValueChange = {
-                            editPin = it.filter { ch -> ch.isDigit() }.take(4)
-                            savedConfirmation = false
+                        value = pinInput,
+                        onValueChange = { next ->
+                            pinInput = next.filter { it.isDigit() }.take(4)
                         },
                         label = { Text(strings.parentPinLabel) },
-                        singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("parent_edit_pin_input")
+                            .testTag("parent_pin_setting_input")
                     )
-
-                    Text(
-                        text = strings.chooseAgeGroup,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AgeBracket.entries.forEach { bracket ->
-                            FilterChip(
-                                selected = editAgeGroup == bracket.code,
-                                onClick = {
-                                    editAgeGroup = bracket.code
-                                    savedConfirmation = false
-                                },
-                                label = { Text(bracket.code) }
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = strings.classroomLanguageLabel,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WonderQuestStrings.supportedLanguages.forEach { (code, name) ->
-                            FilterChip(
-                                selected = editLang == code,
-                                onClick = {
-                                    editLang = code
-                                    savedConfirmation = false
-                                },
-                                label = { Text(name) }
-                            )
-                        }
-                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -403,145 +298,130 @@ fun ParentalDashboardScreen(
                     ) {
                         Text(
                             text = strings.darkModeLabel,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
                         )
                         Switch(
-                            checked = editDark,
-                            onCheckedChange = {
-                                editDark = it
-                                savedConfirmation = false
-                            },
+                            checked = profile.darkMode,
+                            onCheckedChange = onToggleDarkMode,
                             modifier = Modifier.testTag("parent_dark_mode_switch")
                         )
                     }
 
+                    Text(
+                        text = strings.classroomLanguageLabel,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        WonderQuestStrings.supportedLanguages.forEach { (code, label) ->
+                            FilterChip(
+                                selected = profile.languageCode == code,
+                                onClick = { onSelectLanguage(code) },
+                                label = { Text(label) },
+                                modifier = Modifier.testTag("parent_lang_chip_$code")
+                            )
+                        }
+                    }
+
                     Button(
-                        onClick = {
-                            onSaveSettings(editName, editAgeGroup, editLang, editDark, editPin)
-                            savedConfirmation = true
-                        },
+                        onClick = { onSaveSettings(childNameInput, pinInput) },
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
-                            .testTag("save_parent_settings_button"),
-                        shape = MaterialTheme.shapes.medium
+                            .testTag("save_parent_settings_button")
                     ) {
-                        Icon(Icons.Filled.Save, contentDescription = null)
+                        Icon(imageVector = Icons.Default.Save, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (savedConfirmation) "✓ ${strings.cloudSyncedStatus}" else strings.saveSettingsButton,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Text(strings.saveSettingsButton, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // Recent Completed Sessions Header
+        // 4. Recent Learning Sessions Header
         item {
             Text(
                 text = strings.recentSessionsTitle,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .widthIn(max = 640.dp)
+                    .fillMaxWidth()
             )
         }
 
-        if (sessions.isEmpty()) {
+        if (uiState.recentSessions.isEmpty()) {
             item {
-                Card(
+                Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 640.dp),
-                    shape = MaterialTheme.shapes.medium
+                        .widthIn(max = 640.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Text(
                         text = strings.noSessionsYet,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(20.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(18.dp),
                         textAlign = TextAlign.Center
                     )
                 }
             }
         } else {
-            items(sessions.take(15)) { session ->
-                val game = MiniGameType.fromId(session.gameType)
-                Card(
+            items(uiState.recentSessions, key = { it.id.ifEmpty { it.hashCode().toString() } }) { session ->
+                SessionHistoryRow(
+                    session = session,
+                    languageCode = profile.languageCode,
+                    levelPrefix = strings.levelPrefix,
                     modifier = Modifier
+                        .widthIn(max = 640.dp)
                         .fillMaxWidth()
-                        .widthIn(max = 640.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "${game.title(profile.languageCode)} • ${strings.levelPrefix} ${session.levelNumber}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Ages ${session.ageGroup} • ${session.correctAnswers}/${session.totalQuestions} correct • ${session.durationSeconds}s",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row {
-                            repeat(session.starsEarned.toInt().coerceIn(1, 3)) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFF59E0B),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+                )
             }
         }
 
-        // Reset Progress & Sign Out Actions
+        // 5. Reset & Sign Out / Switch Account Actions
         item {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .widthIn(max = 640.dp)
-                    .padding(bottom = 16.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
                     onClick = onResetProgress,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(50.dp)
                         .testTag("reset_progress_button")
                 ) {
-                    Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.resetProgressButton)
+                    Text(strings.resetProgressButton, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = onSignOut,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(50.dp)
                         .testTag("sign_out_button")
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.signOutButton)
+                    Text(strings.signOutButton, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -549,26 +429,205 @@ fun ParentalDashboardScreen(
 }
 
 @Composable
-private fun AnalyticsMetricBox(
-    title: String,
-    value: String,
-    color: Color,
+private fun ParentalPinGate(
+    strings: com.example.data.LocalizedUiStrings,
+    hasError: Boolean,
+    onUnlock: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    var pin by remember { mutableStateOf("") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(20.dp)
+            .testTag("parental_pin_gate"),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineMedium,
-            color = color,
-            fontWeight = FontWeight.Bold
+        Card(
+            modifier = Modifier
+                .widthIn(max = 460.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll( androidx.compose.foundation.rememberScrollState() )
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+
+                Text(
+                    text = strings.parentGateTitle,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = strings.parentGateSubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.tertiaryContainer
+                ) {
+                    Text(
+                        text = strings.defaultPinHint,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { next -> pin = next.filter { it.isDigit() }.take(4) },
+                    label = { Text(strings.enterPinLabel) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                    isError = hasError,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("parent_gate_pin_input")
+                )
+
+                if (hasError) {
+                    Text(
+                        text = strings.wrongPinError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.testTag("parent_pin_error_text")
+                    )
+                }
+
+                Button(
+                    onClick = { onUnlock(pin) },
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .testTag("unlock_parent_hub_button")
+                ) {
+                    Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.unlockDashboardButton, fontWeight = FontWeight.ExtraBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardMetricBox(
+    title: String,
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = accent.copy(alpha = 0.14f)
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = accent
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun SessionHistoryRow(
+    session: GameSessionRecord,
+    languageCode: String,
+    levelPrefix: String,
+    modifier: Modifier = Modifier
+) {
+    val gameType = MiniGameType.fromId(session.gameType)
+    val accent = Color(gameType.accentColorHex)
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = accent.copy(alpha = 0.2f),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = gameType.emoji, style = MaterialTheme.typography.titleLarge)
+                    }
+                }
+                Column {
+                    Text(
+                        text = gameType.localizedTitle(languageCode),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "$levelPrefix ${session.levelNumber} • ${session.correctAnswers}/${session.totalQuestions} (${session.durationSeconds}s)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFFFB300),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "+${session.starsEarned}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
     }
 }

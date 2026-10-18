@@ -39,8 +39,8 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.childName is string && data.childName.size() >= 1 && data.childName.size() <= 40 &&
              data.ageGroup is string && data.ageGroup in ['4-6', '7-9', '10-13'] &&
-             data.selectedCharacter is string && data.selectedCharacter in ['sparky', 'luna', 'robobit', 'sunny'] &&
-             data.languageCode is string && data.languageCode in ['en', 'es', 'fr', 'hi'] &&
+             data.selectedCharacter is string && data.selectedCharacter in ['sparky', 'luna', 'robobit', 'sunny', 'komodo'] &&
+             data.languageCode is string && data.languageCode in ['id', 'en', 'es', 'fr', 'hi'] &&
              data.darkMode is bool &&
              data.parentPin is string && data.parentPin.size() == 4 && data.parentPin.matches('^[0-9]{4}$') &&
              data.totalStars is int && data.totalStars >= 0 && data.totalStars <= 100000 &&
@@ -67,7 +67,10 @@ service cloud.firestore {
              ]) &&
              data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
              data.userId == request.auth.uid &&
-             data.gameType is string && data.gameType in ['math_safari', 'pattern_portal', 'number_bridge', 'logic_matrix'] &&
+             data.gameType is string && data.gameType in [
+               'math_safari', 'pattern_portal', 'number_bridge', 'logic_matrix',
+               'shape_galaxy', 'memory_treasure', 'cosmic_balance'
+             ] &&
              data.ageGroup is string && data.ageGroup in ['4-6', '7-9', '10-13'] &&
              data.levelNumber is int && data.levelNumber >= 1 && data.levelNumber <= 50 &&
              data.starsEarned is int && data.starsEarned >= 1 && data.starsEarned <= 3 &&
