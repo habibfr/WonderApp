@@ -165,6 +165,7 @@ fun WonderQuestSignInScreen(
     onLanguageSelected: (String) -> Unit,
     onSignInRequest: suspend (Activity) -> Result<FirebaseUser?>,
     onGuestModeStart: () -> Unit,
+    onStartOnboarding: () -> Unit = {},
     hasSavedDeviceProgress: Boolean = false,
     savedStarsCount: Long = 0L,
     modifier: Modifier = Modifier
@@ -532,6 +533,35 @@ fun WonderQuestSignInScreen(
                                 Text(
                                     text = strings.guestPlayButton,
                                     style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+
+                            Button(
+                                onClick = onStartOnboarding,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .testTag("welcome_onboarding_button"),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (languageCode == "id") {
+                                        "Kenalan & Panduan Bermain"
+                                    } else {
+                                        "Mascot Guide & First Try"
+                                    },
+                                    style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.ExtraBold
                                 )
                             }

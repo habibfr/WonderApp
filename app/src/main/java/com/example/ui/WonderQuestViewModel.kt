@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class AppDestination {
+    ONBOARDING,
     ISLAND_HOME,
     MINI_GAME_PLAY,
     BUDDIES_ROOM,
@@ -78,6 +79,7 @@ data class WonderQuestUiState(
     val isParentUnlocked: Boolean = false,
     val parentPinError: Boolean = false,
     val isSoundMuted: Boolean = false,
+    val hasCompletedOnboarding: Boolean = false,
     val errorMessage: String? = null
 ) {
     val strings: LocalizedUiStrings
@@ -108,6 +110,7 @@ class WonderQuestViewModel(
             val savedProfile = storage.loadLocalProfile()
             val savedSessions = storage.loadLocalSessions()
             val savedMuted = storage.isSoundMuted()
+            val onboardingDone = storage.isOnboardingCompleted()
             SoundManager.setMuted(savedMuted)
             SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
             _uiState.update { state ->
@@ -117,12 +120,67 @@ class WonderQuestViewModel(
                         profile = savedProfile,
                         recentSessions = savedSessions,
                         isSoundMuted = savedMuted,
+                        hasCompletedOnboarding = onboardingDone,
                         hasPendingCloudSync = storage.hasPendingCloudSync()
                     )
                 } else {
-                    state.copy(isSoundMuted = savedMuted)
+                    state.copy(
+                        isSoundMuted = savedMuted,
+                        hasCompletedOnboarding = onboardingDone
+                    )
                 }
             }
+        }
+    }
+
+    fun startOnboarding() {
+        val storage = localStorage
+        storage?.setGuestModeEnabled(true)
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isGuestMode = if (currentUid == null) true else it.isGuestMode,
+                currentDestination = AppDestination.ONBOARDING
+            )
+        }
+        SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
+        triggerBuddyReaction(BuddyReaction.CELEBRATING)
+    }
+
+    fun completeOnboarding(earnedStarterStars: Int = 3) {
+        val safeStars = earnedStarterStars.coerceIn(0, 10).toLong()
+        val currentProfile = _uiState.value.profile
+        val updatedBadges = (currentProfile.unlockedBadges + "curious_buddy").distinct()
+        val updatedProfile = currentProfile.copy(
+            totalStars = currentProfile.totalStars + safeStars,
+            unlockedBadges = updatedBadges
+        )
+        localStorage?.setOnboardingCompleted(true)
+        localStorage?.setGuestModeEnabled(true)
+        localStorage?.saveLocalProfile(updatedProfile, markForSync = currentUid == null)
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isGuestMode = if (currentUid == null) true else it.isGuestMode,
+                hasCompletedOnboarding = true,
+                profile = updatedProfile,
+                currentDestination = AppDestination.ISLAND_HOME,
+                buddyReaction = BuddyReaction.CELEBRATING
+            )
+        }
+        SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
+    }
+
+    fun skipOnboarding() {
+        localStorage?.setOnboardingCompleted(true)
+        localStorage?.setGuestModeEnabled(true)
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isGuestMode = if (currentUid == null) true else it.isGuestMode,
+                hasCompletedOnboarding = true,
+                currentDestination = AppDestination.ISLAND_HOME
+            )
         }
     }
 

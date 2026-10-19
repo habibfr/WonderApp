@@ -100,6 +100,7 @@ fun IslandHomeScreen(
     onStartMiniGame: (MiniGameType) -> Unit,
     onToggleSoundMute: () -> Unit = {},
     onDailyChallengeReward: (bonusStars: Int, stickerBadgeId: String, isMathTask: Boolean) -> Unit = { _, _, _ -> },
+    onStartOnboarding: () -> Unit = {},
     onRequestCloudSignIn: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -333,6 +334,12 @@ fun IslandHomeScreen(
                                 label = strings.triggerHighFiveButton,
                                 onClick = { onBuddyTap(BuddyReaction.HIGH_FIVE) },
                                 tag = "home_high_five_chip"
+                            )
+                            InteractiveReactionChip(
+                                icon = Icons.Default.AutoAwesome,
+                                label = if (lang == "id") "Panduan Bermain" else "How to Play",
+                                onClick = onStartOnboarding,
+                                tag = "island_onboarding_guide_button"
                             )
                         }
 

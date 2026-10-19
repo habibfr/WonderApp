@@ -51,6 +51,7 @@ import com.example.ui.screens.BadgesTrophiesScreen
 import com.example.ui.screens.BuddiesRoomScreen
 import com.example.ui.screens.IslandHomeScreen
 import com.example.ui.screens.MiniGamePlayScreen
+import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.ParentalDashboardScreen
 import com.example.ui.theme.WonderQuestTheme
 import com.example.util.SoundManager
@@ -149,6 +150,7 @@ fun WonderQuestRoot(
                     authManager.signInWithGoogle(activity, webClientId)
                 },
                 onGuestModeStart = { viewModel.enterGuestMode() },
+                onStartOnboarding = { viewModel.startOnboarding() },
                 hasSavedDeviceProgress = uiState.hasPendingCloudSync || uiState.profile.completedLevelsCount > 0L,
                 savedStarsCount = uiState.profile.totalStars
             )
@@ -188,7 +190,8 @@ fun WonderQuestAppContent(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isWideScreen = maxWidth >= 600.dp
-        val showNavBars = uiState.currentDestination != AppDestination.MINI_GAME_PLAY
+        val showNavBars = uiState.currentDestination != AppDestination.MINI_GAME_PLAY &&
+            uiState.currentDestination != AppDestination.ONBOARDING
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -220,6 +223,22 @@ fun WonderQuestAppContent(
                         currentDestination = uiState.currentDestination
                     ) { destination ->
                         when (destination) {
+                            AppDestination.ONBOARDING -> {
+                                OnboardingScreen(
+                                    selectedCharacter = BuddyCharacter.fromId(uiState.profile.selectedCharacter),
+                                    selectedAgeGroup = uiState.selectedAgeGroup,
+                                    languageCode = uiState.profile.languageCode,
+                                    isSoundMuted = uiState.isSoundMuted,
+                                    onSelectCharacter = { viewModel.selectBuddy(it.id) },
+                                    onSelectAgeGroup = { viewModel.selectAgeGroup(it) },
+                                    onCompleteOnboarding = { earnedStars ->
+                                        viewModel.completeOnboarding(earnedStars)
+                                    },
+                                    onSkipOnboarding = {
+                                        viewModel.skipOnboarding()
+                                    }
+                                )
+                            }
                             AppDestination.ISLAND_HOME -> {
                                 IslandHomeScreen(
                                     uiState = uiState,
@@ -233,6 +252,7 @@ fun WonderQuestAppContent(
                                     onDailyChallengeReward = { stars, badgeId, isMath ->
                                         viewModel.rewardDailyChallenge(stars, badgeId, isMath)
                                     },
+                                    onStartOnboarding = { viewModel.startOnboarding() },
                                     onRequestCloudSignIn = onRequestCloudSignIn
                                 )
                             }

@@ -320,4 +320,63 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithTag("back_to_island_button").performScrollTo().performClick()
         assertTrue(dismissClicked)
     }
+
+    @Test
+    fun onboardingScreen_mascotGuidesChildThroughFirstInteractionAndAwardsStarterStars() {
+        val viewModel = WonderQuestViewModel()
+        viewModel.startOnboarding()
+
+        composeTestRule.setContent {
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            WonderQuestTheme(darkTheme = uiState.profile.darkMode) {
+                WonderQuestAppContent(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onSignOut = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // Step 0: Mascot guide card, companion selector, and age group selector
+        composeTestRule.onNodeWithTag("onboarding_screen").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("onboarding_mascot_guide").assertExists()
+        composeTestRule.onNodeWithTag("onboarding_step_0").assertExists()
+
+        // Tap mascot for a high-five and select Sparky companion + 4-6 age group
+        composeTestRule.onNodeWithTag("onboarding_mascot_tap_area").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("onboarding_buddy_sparky").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("onboarding_age_4-6").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertEquals("sparky", viewModel.uiState.value.profile.selectedCharacter)
+        assertEquals("4-6", viewModel.uiState.value.profile.ageGroup)
+
+        // Advance to Step 1: Guided First Counting & Number Interaction
+        composeTestRule.onNodeWithTag("onboarding_next_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("onboarding_step_1").assertExists()
+
+        // Tap the 3 Magic Stars one by one and pick answer 3 (index 2)
+        composeTestRule.onNodeWithTag("onboarding_star_token_0").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("onboarding_star_token_1").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("onboarding_star_token_2").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("onboarding_answer_option_2").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("onboarding_practice_success_banner").assertExists()
+
+        // Advance to Step 2: Ready to Explore Wonder Island
+        composeTestRule.onNodeWithTag("onboarding_next_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("onboarding_step_2").assertExists()
+        composeTestRule.onNodeWithTag("onboarding_island_preview_card").assertExists()
+        composeTestRule.onNodeWithTag("onboarding_starter_reward_pill").assertExists()
+
+        // Finish onboarding and verify +3 starter stars and transition to Island Home
+        composeTestRule.onNodeWithTag("onboarding_finish_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertTrue(viewModel.uiState.value.hasCompletedOnboarding)
+        assertEquals(3L, viewModel.uiState.value.profile.totalStars)
+        assertEquals(AppDestination.ISLAND_HOME, viewModel.uiState.value.currentDestination)
+        composeTestRule.onNodeWithTag("hero_buddy_card").assertExists()
+    }
 }
