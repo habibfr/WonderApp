@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Purple Royal Circle -->
+    <path
+        android:fillColor="#A98BFA"
+        android:pathData="M40,8 A32,32 0 1,1 39.9,8 Z" />
+    <!-- Golden Crown -->
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M20,52 L24,28 L34,38 L40,22 L46,38 L56,28 L60,52 Z" />
+    <!-- Crown Jewels -->
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M40,38 A4,4 0 1,1 39.9,38 Z" />
+    <path
+        android:fillColor="#72DDA8"
+        android:pathData="M29,42 A3,3 0 1,1 28.9,42 Z M51,42 A3,3 0 1,1 50.9,42 Z" />
+</vector>

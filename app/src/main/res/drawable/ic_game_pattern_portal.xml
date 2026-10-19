@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Soft Purple Aura -->
+    <path
+        android:fillColor="#F1EBFF"
+        android:pathData="M48,8 A40,40 0 1,1 47.9,8 Z" />
+    <path
+        android:fillColor="#A98BFA"
+        android:pathData="M48,14 A34,34 0 1,1 47.9,14 Z" />
+    <!-- Inner Glowing Portal Rings -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M48,22 A26,26 0 1,1 47.9,22 Z" />
+    <path
+        android:fillColor="#55C7F7"
+        android:pathData="M48,30 A18,18 0 1,1 47.9,30 Z" />
+    <!-- Center Golden Diamond Crystal -->
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M48,33 L61,48 L48,63 L35,48 Z" />
+    <!-- Orbiting Pattern Dots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,16 A4,4 0 1,1 47.9,16 Z M76,44 A4,4 0 1,1 75.9,44 Z M20,44 A4,4 0 1,1 19.9,44 Z" />
+</vector>

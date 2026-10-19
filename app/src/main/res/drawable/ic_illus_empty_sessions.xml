@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Soft Sky Circle -->
+    <path
+        android:fillColor="#EBF8FF"
+        android:pathData="M60,12 A48,48 0 1,1 59.9,12 Z" />
+    <!-- Island Hill -->
+    <path
+        android:fillColor="#72DDA8"
+        android:pathData="M24,84 Q60,62 96,84 L86,98 Q60,108 34,98 Z" />
+    <!-- Playful Telescope / Flag on Island -->
+    <path
+        android:strokeColor="#30334A"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M60,36 V78" />
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M60,36 L88,46 L60,56 Z" />
+    <!-- Floating Stars -->
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M36,40 L39,46 L45,47 L40.5,51 L41.5,57 L36,54 L30.5,57 L31.5,51 L27,47 L33,46 Z" />
+</vector>

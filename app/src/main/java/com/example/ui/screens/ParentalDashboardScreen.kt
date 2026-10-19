@@ -48,6 +48,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.example.ui.components.ParentalProgressView
 import com.example.ui.components.RechartsWeeklyActivityCard
 import com.example.ui.components.WonderQuestIcon
 import androidx.compose.runtime.Composable
@@ -78,6 +79,7 @@ fun ParentalDashboardScreen(
     onSaveSettings: (String, String) -> Unit,
     onSelectLanguage: (String) -> Unit,
     onToggleDarkMode: (Boolean) -> Unit,
+    onToggleSoundMute: () -> Unit = {},
     onResetProgress: () -> Unit,
     onSignOut: () -> Unit,
     onLinkCloudAccount: () -> Unit = {},
@@ -267,6 +269,16 @@ fun ParentalDashboardScreen(
             )
         }
 
+        // 2c. Kid-Friendly Parental Progress View (Achievements, Earned Badges & Completed Levels Bars)
+        item {
+            ParentalProgressView(
+                profile = profile,
+                recentSessions = uiState.recentSessions,
+                strings = strings,
+                modifier = Modifier.widthIn(max = 640.dp)
+            )
+        }
+
         // 3. Profile & Classroom Preferences Card
         item {
             Card(
@@ -327,6 +339,23 @@ fun ParentalDashboardScreen(
                         )
                     }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = strings.soundEffectsLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Switch(
+                            checked = !uiState.isSoundMuted,
+                            onCheckedChange = { onToggleSoundMute() },
+                            modifier = Modifier.testTag("parent_sound_effects_switch")
+                        )
+                    }
+
                     Text(
                         text = strings.classroomLanguageLabel,
                         style = MaterialTheme.typography.bodyLarge,
@@ -381,15 +410,28 @@ fun ParentalDashboardScreen(
                     modifier = Modifier
                         .widthIn(max = 640.dp)
                         .fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
                 ) {
-                    Text(
-                        text = strings.noSessionsYet,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(18.dp),
-                        textAlign = TextAlign.Center
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_illus_empty_sessions),
+                            contentDescription = strings.noSessionsYet,
+                            modifier = Modifier.size(88.dp)
+                        )
+                        Text(
+                            text = strings.noSessionsYet,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         } else {

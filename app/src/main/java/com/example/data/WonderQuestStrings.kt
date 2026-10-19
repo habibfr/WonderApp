@@ -80,7 +80,16 @@ data class LocalizedUiStrings(
     val darkModeLabel: String,
     val classroomLanguageLabel: String,
     val tapVisualCounterHint: String
-)
+) {
+    val soundEffectsLabel: String
+        get() = when (languageCode) {
+            "id" -> "Efek Suara"
+            "es" -> "Efectos de Sonido"
+            "fr" -> "Effets Sonores"
+            "hi" -> "ध्वनि प्रभाव"
+            else -> "Sound Effects"
+        }
+}
 
 object WonderQuestStrings {
     val supportedLanguages = listOf(

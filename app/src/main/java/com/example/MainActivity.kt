@@ -42,12 +42,18 @@ import com.example.ui.WonderQuestUiState
 import com.example.ui.WonderQuestViewModel
 import com.example.ui.auth.AuthManager
 import com.example.ui.auth.WonderQuestSignInScreen
+import com.example.ui.components.AnimatedDestinationSwitcher
+import com.example.ui.components.PlayfulBottomNavigationBar
+import com.example.ui.components.PlayfulSideNavigationRail
+import com.example.ui.components.PlayfulSoundEffects
+import com.example.ui.components.buildPlayfulNavItems
 import com.example.ui.screens.BadgesTrophiesScreen
 import com.example.ui.screens.BuddiesRoomScreen
 import com.example.ui.screens.IslandHomeScreen
 import com.example.ui.screens.MiniGamePlayScreen
 import com.example.ui.screens.ParentalDashboardScreen
 import com.example.ui.theme.WonderQuestTheme
+import com.example.util.SoundManager
 import kotlinx.coroutines.launch
 
 private tailrec fun Context.findHostActivity(): Activity? = when (this) {
@@ -65,9 +71,20 @@ class MainActivity : ComponentActivity() {
                 com.google.firebase.FirebaseApp.initializeApp(this)
             }
         }
+        SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
         setContent {
             WonderQuestRoot()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SoundManager.resumeBackgroundMusic()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        SoundManager.pauseBackgroundMusic()
     }
 }
 
@@ -85,6 +102,18 @@ fun WonderQuestRoot(
 
     LaunchedEffect(context) {
         viewModel.attachLocalStorage(context)
+    }
+
+    LaunchedEffect(uiState.currentDestination, uiState.isSoundMuted, currentUser?.uid, uiState.isGuestMode) {
+        val activeTheme = if (
+            uiState.currentDestination == AppDestination.MINI_GAME_PLAY &&
+            (currentUser != null || uiState.isGuestMode)
+        ) {
+            SoundManager.MusicTheme.GAMEPLAY_QUEST
+        } else {
+            SoundManager.MusicTheme.ISLAND_THEME
+        }
+        SoundManager.startBackgroundMusic(activeTheme)
     }
 
     LaunchedEffect(currentUser?.uid) {
@@ -147,13 +176,15 @@ fun WonderQuestAppContent(
     onSignOut: () -> Unit
 ) {
     val strings = uiState.strings
+    val navItems = buildPlayfulNavItems(strings)
 
-    val navItems = listOf(
-        Triple(AppDestination.ISLAND_HOME, strings.navPlay, Icons.Default.Explore),
-        Triple(AppDestination.BUDDIES_ROOM, strings.navBuddies, Icons.Default.Pets),
-        Triple(AppDestination.BADGES_TROPHIES, strings.navBadges, Icons.Default.EmojiEvents),
-        Triple(AppDestination.PARENTAL_HUB, strings.navParents, Icons.Default.Shield)
-    )
+    val handleSelectDestination: (AppDestination) -> Unit = { dest ->
+        PlayfulSoundEffects.playTap(!uiState.isSoundMuted)
+        if (dest != AppDestination.PARENTAL_HUB) {
+            viewModel.lockParentalHub()
+        }
+        viewModel.navigateTo(dest)
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isWideScreen = maxWidth >= 600.dp
@@ -163,28 +194,11 @@ fun WonderQuestAppContent(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
                 if (!isWideScreen && showNavBars) {
-                    NavigationBar(modifier = Modifier.testTag("bottom_nav_bar")) {
-                        navItems.forEach { (dest, label, icon) ->
-                            val selected = uiState.currentDestination == dest
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    if (dest != AppDestination.PARENTAL_HUB) {
-                                        viewModel.lockParentalHub()
-                                    }
-                                    viewModel.navigateTo(dest)
-                                },
-                                icon = { Icon(imageVector = icon, contentDescription = label) },
-                                label = {
-                                    Text(
-                                        text = label,
-                                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium
-                                    )
-                                },
-                                modifier = Modifier.testTag("nav_item_${dest.name.lowercase()}")
-                            )
-                        }
-                    }
+                    PlayfulBottomNavigationBar(
+                        items = navItems,
+                        currentDestination = uiState.currentDestination,
+                        onSelectDestination = handleSelectDestination
+                    )
                 }
             }
         ) { innerPadding ->
@@ -194,101 +208,101 @@ fun WonderQuestAppContent(
                     .padding(innerPadding)
             ) {
                 if (isWideScreen && showNavBars) {
-                    NavigationRail(modifier = Modifier.testTag("side_nav_rail")) {
-                        navItems.forEach { (dest, label, icon) ->
-                            val selected = uiState.currentDestination == dest
-                            NavigationRailItem(
-                                selected = selected,
-                                onClick = {
-                                    if (dest != AppDestination.PARENTAL_HUB) {
-                                        viewModel.lockParentalHub()
-                                    }
-                                    viewModel.navigateTo(dest)
-                                },
-                                icon = { Icon(imageVector = icon, contentDescription = label) },
-                                label = { Text(label) },
-                                modifier = Modifier.testTag("rail_item_${dest.name.lowercase()}")
-                            )
-                        }
-                    }
+                    PlayfulSideNavigationRail(
+                        items = navItems,
+                        currentDestination = uiState.currentDestination,
+                        onSelectDestination = handleSelectDestination
+                    )
                 }
 
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                    when (uiState.currentDestination) {
-                        AppDestination.ISLAND_HOME -> {
-                            IslandHomeScreen(
-                                uiState = uiState,
-                                onSelectAgeGroup = { viewModel.selectAgeGroup(it) },
-                                onSelectPlayMode = { viewModel.selectPlayMode(it) },
-                                onSelectLanguage = { viewModel.selectLanguage(it) },
-                                onToggleDarkMode = { viewModel.toggleDarkMode(it) },
-                                onBuddyTap = { viewModel.triggerBuddyReaction(it) },
-                                onStartMiniGame = { viewModel.startMiniGame(it) },
-                                onRequestCloudSignIn = onRequestCloudSignIn
-                            )
-                        }
-                        AppDestination.MINI_GAME_PLAY -> {
-                            val active = uiState.activeGame
-                            if (active != null) {
-                                MiniGamePlayScreen(
-                                    activeGame = active,
-                                    buddy = BuddyCharacter.fromId(uiState.profile.selectedCharacter),
-                                    buddyReaction = uiState.buddyReaction,
+                    AnimatedDestinationSwitcher(
+                        currentDestination = uiState.currentDestination
+                    ) { destination ->
+                        when (destination) {
+                            AppDestination.ISLAND_HOME -> {
+                                IslandHomeScreen(
+                                    uiState = uiState,
+                                    onSelectAgeGroup = { viewModel.selectAgeGroup(it) },
+                                    onSelectPlayMode = { viewModel.selectPlayMode(it) },
+                                    onSelectLanguage = { viewModel.selectLanguage(it) },
+                                    onToggleDarkMode = { viewModel.toggleDarkMode(it) },
+                                    onBuddyTap = { viewModel.triggerBuddyReaction(it) },
+                                    onStartMiniGame = { viewModel.startMiniGame(it) },
+                                    onToggleSoundMute = { viewModel.toggleSoundMute() },
+                                    onDailyChallengeReward = { stars, badgeId, isMath ->
+                                        viewModel.rewardDailyChallenge(stars, badgeId, isMath)
+                                    },
+                                    onRequestCloudSignIn = onRequestCloudSignIn
+                                )
+                            }
+                            AppDestination.MINI_GAME_PLAY -> {
+                                val active = uiState.activeGame
+                                if (active != null) {
+                                    MiniGamePlayScreen(
+                                        activeGame = active,
+                                        buddy = BuddyCharacter.fromId(uiState.profile.selectedCharacter),
+                                        buddyReaction = uiState.buddyReaction,
+                                        languageCode = uiState.profile.languageCode,
+                                        strings = strings,
+                                        onSelectOption = { viewModel.submitOption(it) },
+                                        onToggleHint = { viewModel.toggleHint() },
+                                        onToggleVisualToken = { viewModel.toggleVisualTokenTap(it) },
+                                        onNextOrFinish = { viewModel.advanceOrFinishMiniGame() },
+                                        onPlayNextLevel = {
+                                            viewModel.startMiniGame(
+                                                gameType = active.gameType,
+                                                customLevel = (active.levelNumber % 50) + 1
+                                            )
+                                        },
+                                        onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) },
+                                        isSoundMuted = uiState.isSoundMuted,
+                                        onToggleSoundMute = { viewModel.toggleSoundMute() },
+                                        onBuddyTap = { viewModel.triggerBuddyReaction(it) }
+                                    )
+                                }
+                            }
+                            AppDestination.BUDDIES_ROOM -> {
+                                BuddiesRoomScreen(
+                                    selectedCharacterId = uiState.profile.selectedCharacter,
+                                    currentReaction = uiState.buddyReaction,
                                     languageCode = uiState.profile.languageCode,
                                     strings = strings,
-                                    onSelectOption = { viewModel.submitOption(it) },
-                                    onToggleHint = { viewModel.toggleHint() },
-                                    onToggleVisualToken = { viewModel.toggleVisualTokenTap(it) },
-                                    onNextOrFinish = { viewModel.advanceOrFinishMiniGame() },
-                                    onPlayNextLevel = {
-                                        viewModel.startMiniGame(
-                                            gameType = active.gameType,
-                                            customLevel = (active.levelNumber % 50) + 1
-                                        )
-                                    },
+                                    buddyHappiness = uiState.buddyHappiness,
+                                    buddyEnergy = uiState.buddyEnergy,
+                                    treatsFedCount = uiState.treatsFedCount,
+                                    onSelectBuddy = { viewModel.selectBuddy(it) },
+                                    onTriggerReaction = { viewModel.triggerBuddyReaction(it) },
                                     onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) }
                                 )
                             }
-                        }
-                        AppDestination.BUDDIES_ROOM -> {
-                            BuddiesRoomScreen(
-                                selectedCharacterId = uiState.profile.selectedCharacter,
-                                currentReaction = uiState.buddyReaction,
-                                languageCode = uiState.profile.languageCode,
-                                strings = strings,
-                                buddyHappiness = uiState.buddyHappiness,
-                                buddyEnergy = uiState.buddyEnergy,
-                                treatsFedCount = uiState.treatsFedCount,
-                                onSelectBuddy = { viewModel.selectBuddy(it) },
-                                onTriggerReaction = { viewModel.triggerBuddyReaction(it) },
-                                onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) }
-                            )
-                        }
-                        AppDestination.BADGES_TROPHIES -> {
-                            BadgesTrophiesScreen(
-                                unlockedBadgeIds = uiState.profile.unlockedBadges,
-                                languageCode = uiState.profile.languageCode,
-                                strings = strings,
-                                recentSessions = uiState.recentSessions,
-                                profile = uiState.profile,
-                                onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) }
-                            )
-                        }
-                        AppDestination.PARENTAL_HUB -> {
-                            ParentalDashboardScreen(
-                                uiState = uiState,
-                                onUnlockWithPin = { viewModel.unlockParentalHub(it) },
-                                onSaveSettings = { name, pin -> viewModel.saveParentalSettings(name, pin) },
-                                onSelectLanguage = { viewModel.selectLanguage(it) },
-                                onToggleDarkMode = { viewModel.toggleDarkMode(it) },
-                                onResetProgress = { viewModel.resetAllProgress() },
-                                onSignOut = onSignOut,
-                                onLinkCloudAccount = onRequestCloudSignIn,
-                                onBackToIsland = {
-                                    viewModel.lockParentalHub()
-                                    viewModel.navigateTo(AppDestination.ISLAND_HOME)
-                                }
-                            )
+                            AppDestination.BADGES_TROPHIES -> {
+                                BadgesTrophiesScreen(
+                                    unlockedBadgeIds = uiState.profile.unlockedBadges,
+                                    languageCode = uiState.profile.languageCode,
+                                    strings = strings,
+                                    recentSessions = uiState.recentSessions,
+                                    profile = uiState.profile,
+                                    onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) }
+                                )
+                            }
+                            AppDestination.PARENTAL_HUB -> {
+                                ParentalDashboardScreen(
+                                    uiState = uiState,
+                                    onUnlockWithPin = { viewModel.unlockParentalHub(it) },
+                                    onSaveSettings = { name, pin -> viewModel.saveParentalSettings(name, pin) },
+                                    onSelectLanguage = { viewModel.selectLanguage(it) },
+                                    onToggleDarkMode = { viewModel.toggleDarkMode(it) },
+                                    onToggleSoundMute = { viewModel.toggleSoundMute() },
+                                    onResetProgress = { viewModel.resetAllProgress() },
+                                    onSignOut = onSignOut,
+                                    onLinkCloudAccount = onRequestCloudSignIn,
+                                    onBackToIsland = {
+                                        viewModel.lockParentalHub()
+                                        viewModel.navigateTo(AppDestination.ISLAND_HOME)
+                                    }
+                                )
+                            }
                         }
                     }
                 }

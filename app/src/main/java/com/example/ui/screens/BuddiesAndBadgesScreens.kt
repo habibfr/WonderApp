@@ -538,10 +538,10 @@ private fun BadgeItemCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (unlocked) {
-                        WonderQuestIcon(
-                            iconKey = badge.iconKey,
-                            tint = accent,
-                            modifier = Modifier.size(34.dp)
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = badge.drawableRes),
+                            contentDescription = badge.localizedTitle(languageCode),
+                            modifier = Modifier.size(44.dp)
                         )
                     } else {
                         Icon(

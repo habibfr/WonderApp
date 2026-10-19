@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Sky Badge Circle -->
+    <path
+        android:fillColor="#55C7F7"
+        android:pathData="M40,8 A32,32 0 1,1 39.9,8 Z" />
+    <!-- Flame -->
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M34,54 L40,68 L46,54 Z" />
+    <!-- Rocket Wings -->
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M28,42 L20,54 L32,52 Z M52,42 L60,54 L48,52 Z" />
+    <!-- Rocket Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,16 Q52,28 50,52 H30 Q28,28 40,16 Z" />
+    <!-- Rocket Window -->
+    <path
+        android:fillColor="#A98BFA"
+        android:pathData="M40,30 A6,6 0 1,1 39.9,30 Z" />
+</vector>

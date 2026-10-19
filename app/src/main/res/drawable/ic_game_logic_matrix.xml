@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Coral Pink Base -->
+    <path
+        android:fillColor="#FFE5E2"
+        android:pathData="M48,8 A40,40 0 1,1 47.9,8 Z" />
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M48,14 A34,34 0 1,1 47.9,14 Z" />
+    <!-- 2x2 Logic Matrix Grid Tiles -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,28 H45 V45 H28 Z" />
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M51,28 H68 V45 H51 Z" />
+    <path
+        android:fillColor="#72DDA8"
+        android:pathData="M28,51 H45 V68 H28 Z" />
+    <!-- Odd-One-Out Star Tile -->
+    <path
+        android:fillColor="#55C7F7"
+        android:pathData="M59.5,49 L62.5,56 L70,57 L64.5,62 L66,69.5 L59.5,65.5 L53,69.5 L54.5,62 L49,57 L56.5,56 Z" />
+</vector>

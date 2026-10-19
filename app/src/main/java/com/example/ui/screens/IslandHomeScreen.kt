@@ -38,8 +38,14 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
+import com.example.ui.components.PlayfulSoundEffects
+import com.example.ui.components.TokenIllustrationCanvas
 import com.example.ui.components.WonderIslandIllustratedBanner
 import com.example.ui.components.WonderQuestIcon
 import androidx.compose.material3.AssistChip
@@ -80,6 +86,7 @@ import com.example.data.WonderQuestStrings
 import com.example.ui.WonderQuestUiState
 import com.example.ui.components.AnimatedBuddyCanvas
 import com.example.ui.components.AnimatedIslandPanoramaCanvas
+import com.example.ui.components.DailyChallenges
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -91,6 +98,8 @@ fun IslandHomeScreen(
     onToggleDarkMode: (Boolean) -> Unit,
     onBuddyTap: (BuddyReaction) -> Unit,
     onStartMiniGame: (MiniGameType) -> Unit,
+    onToggleSoundMute: () -> Unit = {},
+    onDailyChallengeReward: (bonusStars: Int, stickerBadgeId: String, isMathTask: Boolean) -> Unit = { _, _, _ -> },
     onRequestCloudSignIn: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -145,19 +154,42 @@ fun IslandHomeScreen(
                         }
                     }
 
-                    IconButton(
-                        onClick = { onToggleDarkMode(!profile.darkMode) },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .testTag("toggle_dark_mode_button")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (profile.darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = strings.darkModeLabel,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        IconButton(
+                            onClick = onToggleSoundMute,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                .testTag("toggle_sound_button")
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isSoundMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = strings.soundEffectsLabel,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                PlayfulSoundEffects.playTap(!uiState.isSoundMuted)
+                                onToggleDarkMode(!profile.darkMode)
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .testTag("toggle_dark_mode_button")
+                        ) {
+                            Icon(
+                                imageVector = if (profile.darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = strings.darkModeLabel,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
                     }
                 }
             }
@@ -457,6 +489,21 @@ fun IslandHomeScreen(
             }
         }
 
+        // 4b. DailyChallenges: 3 Small Randomized Math & Logic Tasks with Bonus Stars & Stickers
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            DailyChallenges(
+                ageGroup = uiState.selectedAgeGroup,
+                languageCode = lang,
+                isSoundMuted = uiState.isSoundMuted,
+                onRewardEarned = { bonusStars, stickerBadgeId, isMathTask ->
+                    onDailyChallengeReward(bonusStars, stickerBadgeId, isMathTask)
+                },
+                onAllThreeCompletedBonus = { grandBonusStars, grandBadgeId ->
+                    onDailyChallengeReward(grandBonusStars, grandBadgeId, true)
+                }
+            )
+        }
+
         // 5. Step 3: Section Title for 7 Interactive Mini-Games
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
@@ -504,7 +551,10 @@ fun IslandHomeScreen(
                 levelPrefix = strings.levelPrefix,
                 currentLevel = (profile.completedLevelsCount.toInt() % 12) + 1,
                 playMode = uiState.selectedPlayMode,
-                onStart = { onStartMiniGame(gameType) }
+                onStart = {
+                    PlayfulSoundEffects.playTap(!uiState.isSoundMuted)
+                    onStartMiniGame(gameType)
+                }
             )
         }
     }
@@ -666,15 +716,26 @@ private fun MiniGameQuestCard(
 ) {
     val accent = Color(gameType.accentColorHex)
 
+    val previewTokens = when (gameType) {
+        MiniGameType.MATH_SAFARI -> listOf("ITEM_APPLE", "ITEM_STAR", "ITEM_BUTTERFLY")
+        MiniGameType.PATTERN_PORTAL -> listOf("SHAPE_RED_CIRCLE", "SHAPE_BLUE_SQUARE", "SHAPE_GOLD_STAR")
+        MiniGameType.NUMBER_BRIDGE -> listOf("ITEM_STAR", "ITEM_CRYSTAL", "ITEM_SUN")
+        MiniGameType.LOGIC_MATRIX -> listOf("SHAPE_BLUE_SQUARE", "ITEM_CAR", "SHAPE_PURPLE_DIAMOND")
+        MiniGameType.SHAPE_GALAXY -> listOf("SHAPE_GREEN_TRIANGLE", "SHAPE_BLUE_SQUARE", "SHAPE_GOLD_STAR")
+        MiniGameType.MEMORY_TREASURE -> listOf("SHAPE_PURPLE_DIAMOND", "SHAPE_GOLD_STAR", "SHAPE_RED_CIRCLE")
+        MiniGameType.COSMIC_BALANCE -> listOf("ITEM_CRYSTAL", "ITEM_MOON", "ITEM_SUN")
+    }
+
     ElevatedCard(
         onClick = onStart,
         shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .border(2.dp, accent.copy(alpha = 0.36f), RoundedCornerShape(26.dp))
             .testTag("minigame_card_${gameType.id}")
     ) {
         Column(
@@ -683,8 +744,8 @@ private fun MiniGameQuestCard(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            accent.copy(alpha = 0.20f),
-                            accent.copy(alpha = 0.05f),
+                            accent.copy(alpha = 0.22f),
+                            accent.copy(alpha = 0.06f),
                             Color.Transparent
                         )
                     )
@@ -700,13 +761,14 @@ private fun MiniGameQuestCard(
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = accent.copy(alpha = 0.24f),
-                    modifier = Modifier.size(56.dp)
+                    border = BorderStroke(1.5.dp, accent.copy(alpha = 0.45f)),
+                    modifier = Modifier.size(58.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        WonderQuestIcon(
-                            iconKey = gameType.iconKey,
-                            tint = accent,
-                            modifier = Modifier.size(30.dp)
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = gameType.drawableRes),
+                            contentDescription = gameType.localizedTitle(languageCode),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
@@ -714,7 +776,8 @@ private fun MiniGameQuestCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = accent.copy(alpha = 0.18f)
+                        color = accent.copy(alpha = 0.18f),
+                        border = BorderStroke(1.dp, accent.copy(alpha = 0.35f))
                     ) {
                         Text(
                             text = "$levelPrefix $currentLevel • ${playMode.questionCount}Q",
@@ -731,7 +794,7 @@ private fun MiniGameQuestCard(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
                                 tint = Color(0xFFFFB300),
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                         if (playMode.bonusStars > 0) {
@@ -761,16 +824,39 @@ private fun MiniGameQuestCard(
                 minLines = 2
             )
 
+            // Illustrated Token Preview Strip for Visual Recognition
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = accent.copy(alpha = 0.10f),
+                border = BorderStroke(1.dp, accent.copy(alpha = 0.24f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    previewTokens.forEach { tokenCode ->
+                        TokenIllustrationCanvas(
+                            tokenCode = tokenCode,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
             Button(
                 onClick = onStart,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accent,
                     contentColor = Color.White
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(50.dp)
                     .testTag("play_button_${gameType.id}")
             ) {
                 Icon(

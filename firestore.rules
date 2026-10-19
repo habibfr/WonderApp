@@ -82,6 +82,53 @@ service cloud.firestore {
              data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
 
+    match /child_profiles/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidChildProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidChildProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'childName', 'ageGroup', 'selectedCharacter',
+                         'languageCode', 'darkMode', 'parentPin',
+                         'totalStars', 'completedLevelsCount',
+                         'mathScore', 'logicScore', 'streakDays',
+                         'unlockedBadges', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    match /game_sessions/{sessionId} {
+      allow get: if isSignedIn() && isValidId(sessionId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(sessionId) &&
+                       isValidGameSession(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(sessionId) &&
+                       existing().userId == request.auth.uid &&
+                       isValidGameSession(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'starsEarned', 'correctAnswers', 'durationSeconds', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(sessionId) && existing().userId == request.auth.uid;
+    }
+
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
       allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;

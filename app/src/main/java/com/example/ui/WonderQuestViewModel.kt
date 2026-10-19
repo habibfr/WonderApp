@@ -16,6 +16,7 @@ import com.example.data.WonderQuestRepository
 import com.example.data.WonderQuestStrings
 import com.example.domain.MiniGameGenerator
 import com.example.domain.MiniGameQuestion
+import com.example.util.SoundManager
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -45,6 +46,7 @@ data class ActiveGameState(
     val isAnswerSubmitted: Boolean = false,
     val isCurrentCorrect: Boolean = false,
     val correctCount: Int = 0,
+    val currentStreak: Int = 0,
     val showHint: Boolean = false,
     val tappedTokenIndices: Set<Int> = emptySet(),
     val memoryPreviewActive: Boolean = false,
@@ -75,6 +77,7 @@ data class WonderQuestUiState(
     val treatsFedCount: Int = 0,
     val isParentUnlocked: Boolean = false,
     val parentPinError: Boolean = false,
+    val isSoundMuted: Boolean = false,
     val errorMessage: String? = null
 ) {
     val strings: LocalizedUiStrings
@@ -104,16 +107,20 @@ class WonderQuestViewModel(
             localStorage = storage
             val savedProfile = storage.loadLocalProfile()
             val savedSessions = storage.loadLocalSessions()
+            val savedMuted = storage.isSoundMuted()
+            SoundManager.setMuted(savedMuted)
+            SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
             _uiState.update { state ->
                 if (currentUid == null) {
                     state.copy(
                         isLoading = false,
                         profile = savedProfile,
                         recentSessions = savedSessions,
+                        isSoundMuted = savedMuted,
                         hasPendingCloudSync = storage.hasPendingCloudSync()
                     )
                 } else {
-                    state
+                    state.copy(isSoundMuted = savedMuted)
                 }
             }
         }
@@ -140,6 +147,7 @@ class WonderQuestViewModel(
                 currentDestination = AppDestination.ISLAND_HOME
             )
         }
+        SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
         triggerBuddyReaction(BuddyReaction.CELEBRATING)
     }
 
@@ -239,6 +247,9 @@ class WonderQuestViewModel(
     fun navigateTo(destination: AppDestination) {
         if (destination != AppDestination.MINI_GAME_PLAY) {
             blitzTimerJob?.cancel()
+            SoundManager.startBackgroundMusic(SoundManager.MusicTheme.ISLAND_THEME)
+        } else {
+            SoundManager.startBackgroundMusic(SoundManager.MusicTheme.GAMEPLAY_QUEST)
         }
         _uiState.update { state ->
             state.copy(
@@ -256,6 +267,16 @@ class WonderQuestViewModel(
 
     fun triggerBuddyReaction(reaction: BuddyReaction) {
         reactionResetJob?.cancel()
+        if (reaction in listOf(
+                BuddyReaction.EATING_TREAT,
+                BuddyReaction.MAGIC_WAND,
+                BuddyReaction.HIGH_FIVE,
+                BuddyReaction.DANCING,
+                BuddyReaction.SPARKLE
+            )
+        ) {
+            SoundManager.playRewardTrigger(!_uiState.value.isSoundMuted)
+        }
         _uiState.update { state ->
             val newHappiness = (state.buddyHappiness + 4).coerceAtMost(100)
             val newEnergy = when (reaction) {
@@ -386,6 +407,7 @@ class WonderQuestViewModel(
                 buddyReaction = BuddyReaction.CELEBRATING
             )
         }
+        SoundManager.startBackgroundMusic(SoundManager.MusicTheme.GAMEPLAY_QUEST)
         startBlitzTimerIfNeeded(initialBlitzSeconds)
         if (gameType == MiniGameType.MEMORY_TREASURE) {
             scheduleMemoryPreviewHide()
@@ -426,6 +448,8 @@ class WonderQuestViewModel(
             val updatedSet = game.tappedTokenIndices.toMutableSet()
             if (!updatedSet.add(tokenIndex)) {
                 updatedSet.remove(tokenIndex)
+            } else {
+                SoundManager.playTokenCount(updatedSet.size, !state.isSoundMuted)
             }
             state.copy(
                 activeGame = game.copy(tappedTokenIndices = updatedSet),
@@ -440,6 +464,7 @@ class WonderQuestViewModel(
 
         val isCorrect = optionIndex == game.currentQuestion.correctIndex
         val updatedCorrectCount = if (isCorrect) game.correctCount + 1 else game.correctCount
+        val updatedStreak = if (isCorrect) game.currentStreak + 1 else 0
 
         _uiState.update {
             it.copy(
@@ -448,10 +473,24 @@ class WonderQuestViewModel(
                     isAnswerSubmitted = true,
                     isCurrentCorrect = isCorrect,
                     correctCount = updatedCorrectCount,
+                    currentStreak = updatedStreak,
                     showHint = !isCorrect
                 ),
                 buddyReaction = if (isCorrect) BuddyReaction.CELEBRATING else BuddyReaction.THINKING
             )
+        }
+    }
+
+    fun toggleSoundMute() {
+        setSoundMuted(!_uiState.value.isSoundMuted)
+    }
+
+    fun setSoundMuted(muted: Boolean) {
+        SoundManager.setMuted(muted)
+        localStorage?.setSoundMuted(muted)
+        _uiState.update { it.copy(isSoundMuted = muted) }
+        if (!muted) {
+            SoundManager.playButtonClick(enabled = true)
         }
     }
 
@@ -549,6 +588,12 @@ class WonderQuestViewModel(
         localStorage?.addLocalSession(sessionRecord, markForSync = currentUid == null)
         val updatedSessions = listOf(sessionRecord) + state.recentSessions.take(19)
 
+        if (optimisticUnlocked.isNotEmpty()) {
+            SoundManager.playRewardTrigger(!state.isSoundMuted)
+        } else {
+            SoundManager.playLevelComplete(!state.isSoundMuted)
+        }
+
         _uiState.update {
             it.copy(
                 profile = updatedProfile,
@@ -575,6 +620,54 @@ class WonderQuestViewModel(
                     localStorage?.setPendingCloudSync(true)
                 }
             }
+        }
+    }
+
+    fun rewardDailyChallenge(
+        bonusStars: Int,
+        stickerBadgeId: String,
+        isMathTask: Boolean = true
+    ) {
+        val state = _uiState.value
+        val currentProfile = state.profile
+        val safeBonus = bonusStars.coerceIn(1, 20)
+        val newStars = (currentProfile.totalStars + safeBonus).coerceAtMost(100000L)
+        val pointsDelta = (safeBonus * 15L).coerceAtLeast(15L)
+        val newMath = if (isMathTask) {
+            (currentProfile.mathScore + pointsDelta).coerceAtMost(1000000L)
+        } else {
+            currentProfile.mathScore
+        }
+        val newLogic = if (!isMathTask) {
+            (currentProfile.logicScore + pointsDelta).coerceAtMost(1000000L)
+        } else {
+            currentProfile.logicScore
+        }
+
+        val updatedBadges = currentProfile.unlockedBadges.toMutableSet().apply {
+            add("curious_buddy")
+            if (stickerBadgeId.isNotBlank()) {
+                add(stickerBadgeId)
+            }
+            if (newStars >= 10L) {
+                add("star_collector")
+            }
+        }.toList().take(20)
+
+        val updatedProfile = currentProfile.copy(
+            totalStars = newStars,
+            mathScore = newMath,
+            logicScore = newLogic,
+            unlockedBadges = updatedBadges
+        )
+
+        localStorage?.saveLocalProfile(updatedProfile, markForSync = currentUid == null)
+        _uiState.update {
+            it.copy(
+                profile = updatedProfile,
+                hasPendingCloudSync = currentUid == null,
+                buddyReaction = BuddyReaction.CELEBRATING
+            )
         }
     }
 

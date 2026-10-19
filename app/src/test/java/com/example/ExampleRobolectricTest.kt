@@ -1,5 +1,6 @@
 package com.example
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -215,5 +216,108 @@ class ExampleRobolectricTest {
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("chart_series_filter_all").performScrollTo().performClick()
         composeTestRule.waitForIdle()
+    }
+
+    @Test
+    fun dailyChallenges_displaysThreeRandomizedTasksAndRewardsBonusStarsAndStickers() {
+        var totalRewardStars = 0
+        val unlockedStickers = mutableListOf<String>()
+
+        composeTestRule.setContent {
+            WonderQuestTheme {
+                androidx.compose.foundation.layout.Column(
+                    modifier = androidx.compose.ui.Modifier.verticalScroll(
+                        androidx.compose.foundation.rememberScrollState()
+                    )
+                ) {
+                    com.example.ui.components.DailyChallenges(
+                        ageGroup = com.example.data.AgeGroupConfig.JUNIOR,
+                        languageCode = "id",
+                        onRewardEarned = { stars, badgeId, _ ->
+                            totalRewardStars += stars
+                            unlockedStickers.add(badgeId)
+                        },
+                        onAllThreeCompletedBonus = { grandBonus, grandBadge ->
+                            totalRewardStars += grandBonus
+                            unlockedStickers.add(grandBadge)
+                        }
+                    )
+                }
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // Verify all 3 daily challenge task cards and sticker slots are rendered
+        composeTestRule.onNodeWithTag("daily_challenges_section").assertExists()
+        composeTestRule.onNodeWithTag("daily_challenge_card_0").assertExists()
+        composeTestRule.onNodeWithTag("daily_challenge_card_1").assertExists()
+        composeTestRule.onNodeWithTag("daily_challenge_card_2").assertExists()
+        composeTestRule.onNodeWithTag("daily_sticker_slot_0").assertExists()
+        composeTestRule.onNodeWithTag("daily_sticker_slot_1").assertExists()
+        composeTestRule.onNodeWithTag("daily_sticker_slot_2").assertExists()
+
+        // Solve all 3 randomized tasks using the deterministic seed=1 task list
+        val expectedTasks = com.example.ui.components.fetchDailyChallengeTasks(
+            ageGroup = com.example.data.AgeGroupConfig.JUNIOR,
+            languageCode = "id",
+            seed = 1
+        )
+        assertEquals(3, expectedTasks.size)
+
+        expectedTasks.forEachIndexed { taskIdx, task ->
+            val correctIdx = task.question.correctIndex
+            composeTestRule
+                .onNodeWithTag("daily_task_${taskIdx}_option_$correctIdx")
+                .performScrollTo()
+                .performClick()
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithTag("daily_task_${taskIdx}_completed_badge").assertExists()
+        }
+
+        // Verify bonus stars (2 + 3 + 4 + 5 grand bonus = 14) and stickers were awarded
+        assertEquals(14, totalRewardStars)
+        assertTrue(unlockedStickers.contains("star_collector"))
+        assertTrue(unlockedStickers.contains("first_quest"))
+        assertTrue(unlockedStickers.contains("super_streak"))
+        assertTrue(unlockedStickers.contains("island_champion"))
+        composeTestRule.onNodeWithTag("daily_challenges_all_complete_banner").assertExists()
+    }
+
+    @Test
+    fun rewardOverlay_displaysEarnedStarsUnlockedBadgesAndTriggersActions() {
+        var nextLevelClicked = false
+        var dismissClicked = false
+
+        composeTestRule.setContent {
+            WonderQuestTheme {
+                com.example.ui.components.RewardOverlay(
+                    visible = true,
+                    title = "Level Selesai!",
+                    subtitle = "Safari Matematika • Level 1",
+                    earnedStars = 3,
+                    maxStars = 3,
+                    correctAnswers = 5,
+                    totalQuestions = 5,
+                    unlockedBadgeIds = listOf("first_quest", "super_streak"),
+                    onPrimaryAction = { nextLevelClicked = true },
+                    onDismiss = { dismissClicked = true }
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithTag("reward_overlay_modal").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("reward_star_medallion_1").assertExists()
+        composeTestRule.onNodeWithTag("reward_star_medallion_2").assertExists()
+        composeTestRule.onNodeWithTag("reward_star_medallion_3").assertExists()
+        composeTestRule.onNodeWithTag("reward_unlocked_badges_row").assertExists()
+        composeTestRule.onNodeWithTag("reward_badge_chip_first_quest").assertExists()
+        composeTestRule.onNodeWithTag("reward_badge_chip_super_streak").assertExists()
+
+        composeTestRule.onNodeWithTag("play_next_level_button").performScrollTo().performClick()
+        assertTrue(nextLevelClicked)
+
+        composeTestRule.onNodeWithTag("back_to_island_button").performScrollTo().performClick()
+        assertTrue(dismissClicked)
     }
 }

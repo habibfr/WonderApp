@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <!-- Radiant Golden Sunburst Aura -->
+    <path
+        android:fillColor="#FFF6D6"
+        android:pathData="M80,80m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M80,80m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0" />
+    <!-- Confetti Ribbons -->
+    <path
+        android:fillColor="#55C7F7"
+        android:pathData="M24,38C30,30 40,32 44,40C38,46 28,44 24,38Z" />
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M132,36C138,42 134,52 126,54C120,48 124,38 132,36Z" />
+    <path
+        android:fillColor="#72DDA8"
+        android:pathData="M26,116C34,112 42,118 40,126C32,130 24,124 26,116Z" />
+    <path
+        android:fillColor="#A98BFA"
+        android:pathData="M124,114C132,114 138,122 132,128C124,128 118,120 124,114Z" />
+    <!-- Trophy Pedestal Base -->
+    <path
+        android:fillColor="#78350F"
+        android:pathData="M52,124h56c4.4,0 8,3.6 8,8v6H44v-6c0,-4.4 3.6,-8 8,-8z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M60,114h40v10H60z" />
+    <!-- Trophy Stem -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M73,92h14v24H73z" />
+    <!-- Left & Right Handles -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="7"
+        android:pathData="M52,52C36,52 34,76 54,80" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="7"
+        android:pathData="M108,52C124,52 126,76 106,80" />
+    <!-- Golden Trophy Cup -->
+    <path
+        android:fillColor="#FFD95A"
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="4"
+        android:pathData="M48,42h64v22c0,18 -14,32 -32,32S48,82 48,64V42z" />
+    <!-- Center Star Emblem on Cup -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,50l5.2,10.5l11.6,1.7l-8.4,8.2l2,11.6L80,76.5l-10.4,5.5l2,-11.6l-8.4,-8.2l11.6,-1.7z" />
+</vector>

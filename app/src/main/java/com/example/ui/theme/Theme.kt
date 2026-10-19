@@ -11,12 +11,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkIndigoPrimary,
-    onPrimary = Color(0xFF1E1B4B),
-    primaryContainer = DarkIndigoContainer,
-    onPrimaryContainer = OnDarkIndigoContainer,
+    primary = DarkSkyPrimary,
+    onPrimary = Color(0xFF082F49),
+    primaryContainer = DarkSkyContainer,
+    onPrimaryContainer = OnDarkSkyContainer,
     secondary = DarkCoralSecondary,
-    onSecondary = Color(0xFF431407),
+    onSecondary = Color(0xFF450A0A),
     secondaryContainer = DarkCoralContainer,
     onSecondaryContainer = OnDarkCoralContainer,
     tertiary = DarkMintTertiary,
@@ -32,28 +32,28 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = WonderIndigo,
+    primary = SkyBlueDeep,
     onPrimary = Color.White,
-    primaryContainer = WonderIndigoContainer,
-    onPrimaryContainer = OnWonderIndigoContainer,
-    secondary = SparkyCoral,
+    primaryContainer = SkyBlueContainer,
+    onPrimaryContainer = OnSkyBlueContainer,
+    secondary = PlayfulCoralDeep,
     onSecondary = Color.White,
-    secondaryContainer = SparkyCoralContainer,
-    onSecondaryContainer = OnSparkyCoralContainer,
-    tertiary = EmeraldMint,
+    secondaryContainer = PlayfulCoralContainer,
+    onSecondaryContainer = OnPlayfulCoralContainer,
+    tertiary = MintGreenDeep,
     onTertiary = Color.White,
-    tertiaryContainer = EmeraldMintContainer,
-    onTertiaryContainer = OnEmeraldMintContainer,
-    background = LightCreamBackground,
-    onBackground = LightOnBackground,
-    surface = LightCardSurface,
-    onSurface = LightOnBackground,
-    surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = LightOnSurfaceVariant
+    tertiaryContainer = MintGreenContainer,
+    onTertiaryContainer = OnMintGreenContainer,
+    background = WarmCreamBackground,
+    onBackground = DeepSlateText,
+    surface = CrispWhiteSurface,
+    onSurface = DeepSlateText,
+    surfaceVariant = SoftCreamSurfaceVariant,
+    onSurfaceVariant = MutedSlateText
 )
 
 val WonderQuestShapes = Shapes(
-    small = RoundedCornerShape(14.dp),
+    small = RoundedCornerShape(16.dp),
     medium = RoundedCornerShape(22.dp),
     large = RoundedCornerShape(28.dp),
     extraLarge = RoundedCornerShape(36.dp)
@@ -65,12 +65,16 @@ fun WonderQuestTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = WonderQuestShapes,
-        content = content
-    )
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalPlayfulThemeTokens provides PlayfulThemeTokens()
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = WonderQuestDesignSystem.TypographyTokens.MaterialTypography,
+            shapes = WonderQuestDesignSystem.ShapeTokens.MaterialShapes,
+            content = content
+        )
+    }
 }
 
 @Composable

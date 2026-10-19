@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="120dp"
+    android:viewportWidth="360"
+    android:viewportHeight="120">
+    <!-- Decorative Rainbow Arcs -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#44FF7F73"
+        android:strokeWidth="10"
+        android:pathData="M220,110 A70,70 0 0,1 350,110" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#44FFD95A"
+        android:strokeWidth="10"
+        android:pathData="M230,110 A60,60 0 0,1 340,110" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#4472DDA8"
+        android:strokeWidth="10"
+        android:pathData="M240,110 A50,50 0 0,1 330,110" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#4455C7F7"
+        android:strokeWidth="10"
+        android:pathData="M250,110 A40,40 0 0,1 320,110" />
+    <!-- Soft Fluffy Clouds -->
+    <path
+        android:fillColor="#55FFFFFF"
+        android:pathData="M30,45 A14,14 0 0,1 55,36 A18,18 0 0,1 88,40 A12,12 0 0,1 102,52 H24 A10,10 0 0,1 30,45 Z" />
+    <path
+        android:fillColor="#44FFFFFF"
+        android:pathData="M150,30 A12,12 0 0,1 172,24 A15,15 0 0,1 198,28 A10,10 0 0,1 210,38 H144 Z" />
+    <!-- Rolling Playful Hills -->
+    <path
+        android:fillColor="#2872DDA8"
+        android:pathData="M0,95 Q90,65 180,95 T360,90 L360,120 L0,120 Z" />
+</vector>

@@ -30,6 +30,12 @@ class LocalDeviceStorage(context: Context) {
         prefs.edit().putBoolean(KEY_PENDING_CLOUD_SYNC, pending).apply()
     }
 
+    fun isSoundMuted(): Boolean = prefs.getBoolean(KEY_SOUND_MUTED, false)
+
+    fun setSoundMuted(muted: Boolean) {
+        prefs.edit().putBoolean(KEY_SOUND_MUTED, muted).apply()
+    }
+
     fun loadLocalProfile(): ChildProfile {
         val raw = prefs.getString(KEY_LOCAL_PROFILE, null) ?: return ChildProfile(
             id = "local_guest_profile",
@@ -214,6 +220,7 @@ class LocalDeviceStorage(context: Context) {
         private const val PREFS_NAME = "wonderquest_device_storage"
         private const val KEY_IS_GUEST_MODE = "is_guest_mode"
         private const val KEY_PENDING_CLOUD_SYNC = "pending_cloud_sync"
+        private const val KEY_SOUND_MUTED = "is_sound_muted"
         private const val KEY_LOCAL_PROFILE = "local_child_profile_json"
         private const val KEY_LOCAL_SESSIONS = "local_game_sessions_json"
     }

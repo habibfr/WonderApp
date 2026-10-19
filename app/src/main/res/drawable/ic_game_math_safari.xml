@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Mint circular badge base -->
+    <path
+        android:fillColor="#E0FBF0"
+        android:pathData="M48,8 A40,40 0 1,1 47.9,8 Z" />
+    <path
+        android:fillColor="#72DDA8"
+        android:pathData="M48,14 A34,34 0 1,1 47.9,14 Z" />
+    <!-- Playful Safari Compass / Abacus Frame -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,28 H68 A6,6 0 0,1 74,34 V62 A6,6 0 0,1 68,68 H28 A6,6 0 0,1 22,62 V34 A6,6 0 0,1 28,28 Z" />
+    <!-- Abacus Rods -->
+    <path
+        android:strokeColor="#30334A"
+        android:strokeWidth="3"
+        android:pathData="M26,40 H70 M26,54 H70" />
+    <!-- Colorful Counting Beads -->
+    <path
+        android:fillColor="#FF7F73"
+        android:pathData="M36,34 A6,6 0 1,1 35.9,34 Z" />
+    <path
+        android:fillColor="#FFD95A"
+        android:pathData="M50,34 A6,6 0 1,1 49.9,34 Z" />
+    <path
+        android:fillColor="#55C7F7"
+        android:pathData="M42,48 A6,6 0 1,1 41.9,48 Z" />
+    <path
+        android:fillColor="#A98BFA"
+        android:pathData="M58,48 A6,6 0 1,1 57.9,48 Z" />
+</vector>
