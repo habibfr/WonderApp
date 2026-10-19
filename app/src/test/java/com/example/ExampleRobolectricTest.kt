@@ -161,4 +161,59 @@ class ExampleRobolectricTest {
 
         assertTrue(viewModel.uiState.value.isParentUnlocked)
     }
+
+    @Test
+    fun weeklyActivityChart_visualizesMathAndLogicProblemsSolvedAndSupportsToggles() {
+        val viewModel = WonderQuestViewModel()
+        viewModel.enterGuestMode()
+
+        // Complete a Math game (MATH_SAFARI) and a Logic game (PATTERN_PORTAL)
+        viewModel.startMiniGame(MiniGameType.MATH_SAFARI, customLevel = 1)
+        val mathCount = viewModel.uiState.value.activeGame?.questions?.size ?: 5
+        repeat(mathCount) {
+            val active = viewModel.uiState.value.activeGame!!
+            viewModel.submitOption(active.currentQuestion.correctIndex)
+            viewModel.advanceOrFinishMiniGame()
+        }
+
+        viewModel.startMiniGame(MiniGameType.PATTERN_PORTAL, customLevel = 1)
+        val logicCount = viewModel.uiState.value.activeGame?.questions?.size ?: 5
+        repeat(logicCount) {
+            val active = viewModel.uiState.value.activeGame!!
+            viewModel.submitOption(active.currentQuestion.correctIndex)
+            viewModel.advanceOrFinishMiniGame()
+        }
+
+        viewModel.navigateTo(AppDestination.BADGES_TROPHIES)
+
+        composeTestRule.setContent {
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            WonderQuestTheme {
+                WonderQuestAppContent(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onSignOut = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithTag("weekly_activity_chart_card").assertExists()
+        composeTestRule.onNodeWithTag("recharts_responsive_canvas").assertExists()
+        composeTestRule.onNodeWithTag("recharts_tooltip_card").assertExists()
+
+        // Toggle chart style to Bar Chart and back to Area Chart
+        composeTestRule.onNodeWithTag("chart_style_toggle_bar").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("chart_style_toggle_area").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        // Filter series by Math Only, Logic Only, and Both
+        composeTestRule.onNodeWithTag("chart_series_filter_math").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("chart_series_filter_logic").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("chart_series_filter_all").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+    }
 }

@@ -48,6 +48,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.example.ui.components.RechartsWeeklyActivityCard
 import com.example.ui.components.WonderQuestIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -254,6 +255,16 @@ fun ParentalDashboardScreen(
                     }
                 }
             }
+        }
+
+        // 2b. Weekly Activity Chart (Math & Logic Problems Solved Over Time)
+        item {
+            RechartsWeeklyActivityCard(
+                sessions = uiState.recentSessions,
+                profile = profile,
+                languageCode = profile.languageCode,
+                modifier = Modifier.widthIn(max = 640.dp)
+            )
         }
 
         // 3. Profile & Classroom Preferences Card

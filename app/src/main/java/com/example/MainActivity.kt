@@ -269,6 +269,8 @@ fun WonderQuestAppContent(
                                 unlockedBadgeIds = uiState.profile.unlockedBadges,
                                 languageCode = uiState.profile.languageCode,
                                 strings = strings,
+                                recentSessions = uiState.recentSessions,
+                                profile = uiState.profile,
                                 onBackToIsland = { viewModel.navigateTo(AppDestination.ISLAND_HOME) }
                             )
                         }

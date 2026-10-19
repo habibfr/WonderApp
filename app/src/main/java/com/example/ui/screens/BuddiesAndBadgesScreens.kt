@@ -71,8 +71,11 @@ import com.example.data.BadgeCatalog
 import com.example.data.BadgeDefinition
 import com.example.data.BuddyCharacter
 import com.example.data.BuddyReaction
+import com.example.data.ChildProfile
+import com.example.data.GameSessionRecord
 import com.example.data.LocalizedUiStrings
 import com.example.ui.components.AnimatedBuddyCanvas
+import com.example.ui.components.RechartsWeeklyActivityCard
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -359,6 +362,8 @@ fun BadgesTrophiesScreen(
     languageCode: String,
     strings: LocalizedUiStrings,
     onBackToIsland: () -> Unit,
+    recentSessions: List<GameSessionRecord> = emptyList(),
+    profile: ChildProfile = ChildProfile(),
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBackToIsland)
@@ -456,6 +461,14 @@ fun BadgesTrophiesScreen(
                     }
                 }
             }
+        }
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            RechartsWeeklyActivityCard(
+                sessions = recentSessions,
+                profile = profile,
+                languageCode = languageCode
+            )
         }
 
         items(BadgeCatalog.allBadges, key = { it.id }) { badge ->
